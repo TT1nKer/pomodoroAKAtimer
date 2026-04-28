@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pomodoro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="icon" id="favicon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0a0a'/%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%23ededed' stroke-width='4'/%3E%3C/svg%3E">
+<script src="./vue.global.prod.js"></script>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --text: #ededed;
+  --muted: #6b6b70;
+  --dim: #2a2a2d;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.22);
+  --accent: #ededed;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 300;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+}
+
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between;
+  padding: 2.2rem 3rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.28em;
+  text-transform: lowercase;
+  color: var(--muted);
+  z-index: 5;
+  transition: opacity 0.5s ease;
+}
+.topbar a { color: var(--muted); cursor: pointer; transition: color 0.2s; }
+.topbar a:hover { color: var(--text); }
+.topbar .right { display: flex; gap: 2rem; }
+
+.idle .topbar, .idle .controls, .idle .session-strip, .idle .total-bar { opacity: 0; pointer-events: none; }
+
+.center {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
+  width: 100%;
+}
+
+.phase {
+  font-size: clamp(1.2rem, 2.4vmin, 1.8rem);
+  letter-spacing: 0.5em;
+  color: var(--muted);
+  text-transform: lowercase;
+  text-indent: 0.5em;
+}
+
+.digits-wrap {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-weight: 200;
+  font-size: clamp(7rem, 38vmin, 32rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.digits-wrap .colon { color: var(--muted); margin: 0 0.02em; }
+.digits-wrap.editable { cursor: text; }
+.digits-wrap.editable:hover .colon { color: var(--text); }
+
+.edit-input {
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  font-variant-numeric: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  text-align: center;
+  width: 7ch;
+  padding: 0;
+  caret-color: var(--text);
+}
+
+.eta {
+  font-size: 1rem;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  text-transform: lowercase;
+  margin-top: -0.4rem;
+}
+.eta .v { color: var(--text); }
+
+.session-strip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: min(72vmin, 880px);
+  height: 26px;
+  transition: opacity 0.5s ease;
+}
+.session-strip .seg {
+  height: 100%;
+  background: var(--dim);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: transparent;
+}
+.session-strip .seg:hover { background: var(--line-strong); color: var(--muted); }
+.session-strip .seg.done { background: var(--line-strong); }
+.session-strip .seg.current {
+  background: var(--text);
+  color: var(--bg);
+  height: 32px;
+}
+.session-strip .seg.short { opacity: 0.65; }
+.session-strip .seg.long  { opacity: 0.85; }
+.session-strip .seg.short.current,
+.session-strip .seg.long.current { opacity: 1; }
+
+.total-bar {
+  width: min(72vmin, 880px);
+  height: 2px;
+  background: var(--dim);
+  position: relative;
+  transition: opacity 0.5s ease;
+}
+.total-bar .fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--text);
+  transition: width 0.5s ease;
+}
+.total-bar .label {
+  position: absolute;
+  top: 8px; left: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+  text-transform: lowercase;
+}
+
+.controls {
+  position: fixed;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2.6rem;
+  z-index: 5;
+  transition: opacity 0.5s ease;
+}
+.btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 0.32em;
+  text-transform: lowercase;
+  padding: 0.5rem 0.3rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.btn:hover { color: var(--text); }
+.btn.primary { color: var(--text); }
+
+.flash {
+  position: fixed; inset: 0;
+  background: var(--text);
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  animation: flashAnim 0.7s ease-out;
+}
+@keyframes flashAnim {
+  0%   { opacity: 0; }
+  15%  { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+.alert-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.86);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  cursor: pointer;
+}
+.alert-modal .ring-pulse {
+  width: 80px; height: 80px;
+  border: 1px solid var(--text);
+  border-radius: 50%;
+  animation: pulseRing 1.4s ease-out infinite;
+}
+.alert-modal .center-text {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center; gap: 1.4rem;
+}
+.alert-modal .label {
+  font-size: 1.4rem;
+  letter-spacing: 0.5em;
+  color: var(--text);
+  text-transform: lowercase;
+}
+.alert-modal .next {
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+}
+.alert-modal .dismiss {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.32em;
+  color: var(--dim);
+}
+@keyframes pulseRing {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0;   }
+}
+
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+}
+.modal {
+  width: min(620px, 96vw);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 1.4rem 1.8rem 1.4rem;
+  font-size: 0.9rem;
+}
+.modal-tabs {
+  display: flex;
+  gap: 1.8rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.4rem;
+}
+.modal-tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.32em;
+  text-transform: lowercase;
+  padding: 0.6rem 0;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+.modal-tabs button:hover { color: var(--text); }
+.modal-tabs button.active { color: var(--text); }
+.modal-tabs button.active::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -5px;
+  transform: translateX(-50%);
+  width: 14px; height: 1px;
+  background: var(--text);
+}
+.modal-tabs .x {
+  margin-left: auto;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
+  padding: 0.6rem 0;
+}
+.modal-tabs .x:hover { color: var(--text); }
+
+.section-h {
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  color: var(--muted);
+  text-transform: lowercase;
+  margin: 1.2rem 0 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.section-h:first-child { margin-top: 0; }
+
+.field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.88rem;
+  gap: 1rem;
+}
+.field:last-of-type { border-bottom: 0; }
+.field label { color: var(--muted); }
+.field input[type="number"] {
+  width: 4.5rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: right;
+  padding: 0.25rem 0;
+}
+.field input[type="number"]:focus { outline: 0; border-bottom-color: var(--text); }
+.field select {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.25rem 0;
+}
+.field select:focus { outline: 0; border-bottom-color: var(--text); }
+.field select option { background: var(--bg); color: var(--text); }
+
+.switch { position: relative; width: 30px; height: 16px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute; inset: 0;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.switch .slider::before {
+  content: ""; position: absolute;
+  width: 8px; height: 8px;
+  left: 3px; top: 3px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.switch input:checked + .slider::before {
+  transform: translateX(14px);
+  background: var(--text);
+}
+
+.phase-row {
+  display: grid;
+  grid-template-columns: 24px 18px 1fr 80px 24px;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+.phase-row.dragging { opacity: 0.4; }
+.phase-row.dragover { border-top: 1px solid var(--text); }
+.phase-row .grip {
+  cursor: grab;
+  color: var(--dim);
+  font-size: 0.95rem;
+  letter-spacing: -0.1em;
+  user-select: none;
+}
+.phase-row .grip:hover { color: var(--muted); }
+.phase-row .idx { color: var(--dim); font-size: 0.78rem; letter-spacing: 0.15em; }
+.phase-row select, .phase-row input[type="number"] {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.25rem 0;
+  width: 100%;
+}
+.phase-row input[type="number"] { text-align: right; }
+.phase-row select:focus, .phase-row input[type="number"]:focus {
+  outline: 0; border-bottom-color: var(--text);
+}
+.phase-row select option { background: var(--bg); color: var(--text); }
+.phase-row .del {
+  color: var(--dim);
+  cursor: pointer;
+  text-align: center;
+  font-size: 1.1rem;
+  transition: color 0.15s;
+}
+.phase-row .del:hover { color: var(--text); }
+
+.add-row {
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.add-row:hover { color: var(--text); }
+
+.presets { display: flex; gap: 1.4rem; margin-top: 0.4rem; flex-wrap: wrap; }
+.presets button {
+  appearance: none; border: 0; background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--line);
+  transition: color 0.2s, border-color 0.2s;
+}
+.presets button:hover { color: var(--text); border-bottom-color: var(--line-strong); }
+
+.modal .actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.modal .actions .info {
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+}
+.modal .actions .right { display: flex; gap: 1.6rem; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 0.4rem 0 1.6rem;
+}
+.stat {
+  border: 1px solid var(--line);
+  padding: 1rem 1.1rem;
+}
+.stat .k {
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  text-transform: lowercase;
+  margin-bottom: 0.5rem;
+}
+.stat .v {
+  font-size: 1.5rem;
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.stat .v .unit { color: var(--muted); font-size: 0.82rem; letter-spacing: 0.1em; margin-left: 0.3rem; }
+.stat .sub { font-size: 0.72rem; color: var(--dim); letter-spacing: 0.18em; margin-top: 0.3rem; }
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 90px;
+  margin-top: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.chart .bar {
+  flex: 1;
+  background: var(--dim);
+  min-height: 1px;
+  position: relative;
+  cursor: default;
+  transition: background 0.2s;
+}
+.chart .bar.has { background: var(--line-strong); }
+.chart .bar.today { background: var(--text); }
+.chart .bar:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 100%; left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  padding: 0.25rem 0.5rem;
+  margin-bottom: 4px;
+  letter-spacing: 0.12em;
+}
+.chart-axis {
+  display: flex; justify-content: space-between;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  margin-top: 0.3rem;
+}
+
+.danger {
+  margin-top: 1.4rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  cursor: pointer;
+  text-transform: lowercase;
+}
+.danger:hover { color: #d97777; }
+</style>
+</head>
+<body :class="{ idle, running: state.running }">
+
+<div id="app">
+
+  <div class="topbar">
+    <a @click="openTab('session')">session</a>
+    <div class="right">
+      <a @click="openTab('stats')">stats</a>
+      <a @click="toggleFullscreen">fullscreen</a>
+      <a @click="openTab('settings')">settings</a>
+    </div>
+  </div>
+
+  <div class="center">
+    <div class="phase">{{ phaseLabel }}</div>
+
+    <div class="digits-wrap"
+         :class="{ editable: !state.running }"
+         @click="enterEdit"
+         @wheel.prevent="onWheel">
+      <template v-if="!editing">
+        <span>{{ minutes }}</span><span class="colon">:</span><span>{{ seconds }}</span>
+      </template>
+      <input v-else
+             ref="editEl"
+             class="edit-input"
+             v-model="editValue"
+             @keydown.enter="commitEdit"
+             @keydown.esc="cancelEdit"
+             @blur="commitEdit"
+             spellcheck="false">
+    </div>
+
+    <div class="eta" v-if="state.running || state.remainingMs < state.totalMs">
+      ends <span class="v">{{ etaText }}</span>
+    </div>
+    <div class="eta" v-else style="opacity: 0.4;">
+      will end <span class="v">{{ etaText }}</span>
+    </div>
+
+    <div class="session-strip">
+      <div v-for="(p, i) in state.session" :key="i"
+           class="seg"
+           :class="[p.type, { current: i === state.idx, done: i < state.idx }]"
+           :style="{ flex: p.min }"
+           :title="`${labelOf(p.type)} · ${p.min}m`"
+           @click="jumpTo(i)">
+        {{ p.min }}
+      </div>
+    </div>
+
+    <div class="total-bar" v-if="state.showTotalBar">
+      <div class="fill" :style="{ width: (totalProgress * 100) + '%' }"></div>
+      <div class="label">session {{ totalRemainingLabel }}</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" @click="reset">reset</button>
+    <button class="btn primary" @click="toggle">{{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
+    <button class="btn" @click="skip">next</button>
+  </div>
+
+  <div class="flash" v-if="flashKey" :key="flashKey"></div>
+
+  <div class="alert-modal" v-if="alerting" @click="dismissAlert">
+    <div class="ring-pulse"></div>
+    <div class="center-text">
+      <div class="label">{{ alertLabel }}</div>
+      <div class="next">next · {{ alertNext }}</div>
+      <div class="dismiss">click anywhere to dismiss</div>
+    </div>
+  </div>
+
+  <div class="modal-bg" v-if="showModal" @click.self="closeModal(false)">
+    <div class="modal">
+      <div class="modal-tabs">
+        <button :class="{active: tab === 'session'}"  @click="tab = 'session'">session</button>
+        <button :class="{active: tab === 'settings'}" @click="tab = 'settings'">settings</button>
+        <button :class="{active: tab === 'stats'}"    @click="tab = 'stats'">stats</button>
+        <span class="x" @click="closeModal(false)">close</span>
+      </div>
+
+      <template v-if="tab === 'session'">
+        <div class="section-h">
+          <span>phases</span>
+          <span style="color: var(--dim);">{{ totalMinutes(draft.session) }} min total</span>
+        </div>
+        <div v-for="(p, i) in draft.session" :key="i"
+             class="phase-row"
+             :class="{ dragging: dragIdx === i, dragover: dragOverIdx === i }"
+             draggable="true"
+             @dragstart="onDragStart(i, $event)"
+             @dragover.prevent="onDragOver(i)"
+             @dragleave="onDragLeave(i)"
+             @drop.prevent="onDrop(i)"
+             @dragend="onDragEnd">
+          <div class="grip" title="drag to reorder">⋮⋮</div>
+          <div class="idx">{{ String(i+1).padStart(2,'0') }}</div>
+          <select v-model="p.type">
+            <option value="focus">focus</option>
+            <option value="short">short break</option>
+            <option value="long">long break</option>
+          </select>
+          <input type="number" min="1" max="240" step="1" v-model.number="p.min">
+          <div class="del" @click="removePhase(i)">×</div>
+        </div>
+        <div class="add-row" @click="addPhase">+ add phase</div>
+
+        <div class="section-h" style="margin-top: 1.6rem;">presets</div>
+        <div class="presets">
+          <button @click="loadPreset('classic')">classic 25/5 ×4 + 15</button>
+          <button @click="loadPreset('long')">long 50/10 ×3</button>
+          <button @click="loadPreset('ultradian')">ultradian 90/20</button>
+          <button @click="loadPreset('sprint')">sprint 15/3 ×6</button>
+        </div>
+      </template>
+
+      <template v-if="tab === 'settings'">
+        <div class="section-h">general</div>
+        <div class="field"><label>auto advance</label><label class="switch"><input type="checkbox" v-model="draft.autoAdvance"><span class="slider"></span></label></div>
+        <div class="field"><label>chime sound</label><label class="switch"><input type="checkbox" v-model="draft.sound"><span class="slider"></span></label></div>
+        <div class="field"><label>desktop notify</label><label class="switch"><input type="checkbox" v-model="draft.notify"><span class="slider"></span></label></div>
+        <div class="field"><label>loop session</label><label class="switch"><input type="checkbox" v-model="draft.loop"><span class="slider"></span></label></div>
+        <div class="field">
+          <label>alert intensity</label>
+          <select v-model="draft.alertIntensity">
+            <option value="gentle">gentle (one chime)</option>
+            <option value="strong">strong (chime + flash + title)</option>
+            <option value="persistent">persistent (until dismissed)</option>
+          </select>
+        </div>
+
+        <div class="section-h" style="margin-top: 1.6rem;">advanced</div>
+        <div class="field"><label>keep screen awake</label><label class="switch"><input type="checkbox" v-model="draft.wakeLock"><span class="slider"></span></label></div>
+        <div class="field"><label>show session total bar</label><label class="switch"><input type="checkbox" v-model="draft.showTotalBar"><span class="slider"></span></label></div>
+        <div class="field"><label>dynamic favicon</label><label class="switch"><input type="checkbox" v-model="draft.dynamicFavicon"><span class="slider"></span></label></div>
+      </template>
+
+      <template v-if="tab === 'stats'">
+        <div class="section-h">focus time</div>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="k">today</div>
+            <div class="v">{{ formatMinutes(stats.today.min) }}<span class="unit">min</span></div>
+            <div class="sub">{{ stats.today.count }} sessions</div>
+          </div>
+          <div class="stat">
+            <div class="k">week</div>
+            <div class="v">{{ formatMinutes(stats.week.min) }}<span class="unit">min</span></div>
+            <div class="sub">{{ stats.week.count }} sessions</div>
+          </div>
+          <div class="stat">
+            <div class="k">month</div>
+            <div class="v">{{ formatMinutes(stats.month.min) }}<span class="unit">min</span></div>
+            <div class="sub">{{ stats.month.count }} sessions</div>
+          </div>
+          <div class="stat">
+            <div class="k">year</div>
+            <div class="v">{{ formatMinutes(stats.year.min) }}<span class="unit">min</span></div>
+            <div class="sub">{{ stats.year.count }} sessions</div>
+          </div>
+        </div>
+
+        <div class="section-h">last 30 days</div>
+        <div class="chart">
+          <div v-for="d in stats.last30" :key="d.date"
+               class="bar"
+               :class="{ has: d.min > 0, today: d.isToday }"
+               :style="{ height: (d.min / Math.max(stats.peak30, 1) * 100) + '%' }"
+               :data-tip="d.label"></div>
+        </div>
+        <div class="chart-axis">
+          <span>{{ stats.last30[0]?.shortDate }}</span>
+          <span>{{ stats.last30[15]?.shortDate }}</span>
+          <span>today</span>
+        </div>
+
+        <div class="section-h" style="margin-top: 1.6rem;">all-time</div>
+        <div class="field"><label>total focus minutes</label><span style="color: var(--text);">{{ formatMinutes(stats.all.min) }}</span></div>
+        <div class="field"><label>total sessions</label><span style="color: var(--text);">{{ stats.all.count }}</span></div>
+        <div class="field"><label>tracking since</label><span style="color: var(--text);">{{ stats.all.since }}</span></div>
+
+        <div class="danger" @click="confirmResetStats">reset all stats</div>
+      </template>
+
+      <div class="actions">
+        <span class="info">click digits to edit · scroll / ↑↓ to ±1m · space to start</span>
+        <div class="right">
+          <button class="btn" @click="closeModal(false)">cancel</button>
+          <button class="btn primary" @click="closeModal(true)">save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, reactive, ref, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+
+const STORE_KEY = "pomodoro.vue.v4";
+const STATS_KEY = "pomodoro.stats.v1";
+const META_KEY  = "pomodoro.meta.v1";
+const LABELS = { focus: "focus", short: "short break", long: "long break" };
+
+const PRESETS = {
+  classic: () => [
+    { type: "focus", min: 25 }, { type: "short", min: 5 },
+    { type: "focus", min: 25 }, { type: "short", min: 5 },
+    { type: "focus", min: 25 }, { type: "short", min: 5 },
+    { type: "focus", min: 25 }, { type: "long",  min: 15 },
+  ],
+  long: () => [
+    { type: "focus", min: 50 }, { type: "short", min: 10 },
+    { type: "focus", min: 50 }, { type: "short", min: 10 },
+    { type: "focus", min: 50 }, { type: "long",  min: 20 },
+  ],
+  ultradian: () => [
+    { type: "focus", min: 90 }, { type: "long", min: 20 },
+    { type: "focus", min: 90 }, { type: "long", min: 20 },
+  ],
+  sprint: () => [
+    { type: "focus", min: 15 }, { type: "short", min: 3 },
+    { type: "focus", min: 15 }, { type: "short", min: 3 },
+    { type: "focus", min: 15 }, { type: "short", min: 3 },
+    { type: "focus", min: 15 }, { type: "short", min: 3 },
+    { type: "focus", min: 15 }, { type: "short", min: 3 },
+    { type: "focus", min: 15 }, { type: "long",  min: 10 },
+  ],
+};
+
+function defaultState() {
+  const session = PRESETS.classic();
+  return {
+    session,
+    idx: 0,
+    remainingMs: session[0].min * 60 * 1000,
+    totalMs: session[0].min * 60 * 1000,
+    running: false,
+    autoAdvance: true,
+    sound: true,
+    notify: true,
+    loop: true,
+    alertIntensity: "strong",
+    wakeLock: true,
+    showTotalBar: false,
+    dynamicFavicon: true,
+  };
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return defaultState();
+    const p = JSON.parse(raw);
+    const base = defaultState();
+    const session = Array.isArray(p.session) && p.session.length ? p.session : base.session;
+    const idx = Math.min(Math.max(0, p.idx | 0), session.length - 1);
+    const totalMs = session[idx].min * 60 * 1000;
+    return {
+      session, idx,
+      remainingMs: typeof p.remainingMs === "number" && p.remainingMs <= totalMs ? p.remainingMs : totalMs,
+      totalMs,
+      running: false,
+      autoAdvance: p.autoAdvance !== false,
+      sound: p.sound !== false,
+      notify: p.notify !== false,
+      loop: p.loop !== false,
+      alertIntensity: p.alertIntensity || "strong",
+      wakeLock: p.wakeLock !== false,
+      showTotalBar: !!p.showTotalBar,
+      dynamicFavicon: p.dynamicFavicon !== false,
+    };
+  } catch { return defaultState(); }
+}
+
+function loadStatsLog() {
+  try {
+    const raw = localStorage.getItem(STATS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function saveStatsLog(log) {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(log)); } catch {}
+}
+function loadMeta() {
+  try { return JSON.parse(localStorage.getItem(META_KEY) || "{}"); } catch { return {}; }
+}
+function saveMeta(m) {
+  try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch {}
+}
+
+createApp({
+  setup() {
+    const state = reactive(loadState());
+    const idle = ref(false);
+    const showModal = ref(false);
+    const tab = ref("session");
+    const draft = reactive({});
+
+    const editing = ref(false);
+    const editValue = ref("");
+    const editEl = ref(null);
+
+    const flashKey = ref(0);
+    const alerting = ref(false);
+    const alertLabel = ref("");
+    const alertNext = ref("");
+
+    const dragIdx = ref(-1);
+    const dragOverIdx = ref(-1);
+
+    const statsLog = ref(loadStatsLog());
+    const nowTick = ref(Date.now());
+
+    const currentPhase = computed(() => state.session[state.idx] || { type: "focus", min: 25 });
+    const phaseLabel = computed(() => LABELS[currentPhase.value.type]);
+    const progressFrac = computed(() =>
+      state.totalMs > 0 ? Math.max(0, Math.min(1, state.remainingMs / state.totalMs)) : 0
+    );
+    const minutes = computed(() =>
+      String(Math.floor(Math.max(0, Math.ceil(state.remainingMs / 1000)) / 60)).padStart(2, "0")
+    );
+    const seconds = computed(() =>
+      String(Math.max(0, Math.ceil(state.remainingMs / 1000)) % 60).padStart(2, "0")
+    );
+    const etaText = computed(() => {
+      void nowTick.value;
+      const end = new Date(Date.now() + state.remainingMs);
+      const hh = String(end.getHours()).padStart(2, "0");
+      const mm = String(end.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    });
+
+    const totalProgress = computed(() => {
+      const total = state.session.reduce((a, p) => a + p.min * 60_000, 0);
+      const done = state.session.slice(0, state.idx).reduce((a, p) => a + p.min * 60_000, 0)
+                 + (state.totalMs - state.remainingMs);
+      return total > 0 ? done / total : 0;
+    });
+    const totalRemainingLabel = computed(() => {
+      const total = state.session.reduce((a, p) => a + p.min * 60_000, 0);
+      const done = state.session.slice(0, state.idx).reduce((a, p) => a + p.min * 60_000, 0)
+                 + (state.totalMs - state.remainingMs);
+      const remain = Math.max(0, total - done);
+      const m = Math.floor(remain / 60000);
+      const h = Math.floor(m / 60);
+      return h > 0 ? `${h}h ${m % 60}m left` : `${m}m left`;
+    });
+
+    const labelOf = (t) => LABELS[t] || t;
+    const totalMinutes = (s) => s.reduce((a, p) => a + (Number(p.min) || 0), 0);
+    const formatMinutes = (m) => {
+      m = Math.round(m);
+      if (m < 60) return String(m);
+      const h = Math.floor(m / 60);
+      const r = m % 60;
+      return r === 0 ? `${h}h` : `${h}h${r}`;
+    };
+
+    const stats = computed(() => {
+      void nowTick.value;
+      const log = statsLog.value;
+      const now = new Date();
+      const startToday = new Date(now); startToday.setHours(0,0,0,0);
+      const startWeek = new Date(startToday);
+      const dow = (startWeek.getDay() + 6) % 7;
+      startWeek.setDate(startWeek.getDate() - dow);
+      const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startYear  = new Date(now.getFullYear(), 0, 1);
+
+      const sumSince = (t) => {
+        let mins = 0, count = 0;
+        for (const e of log) {
+          if (e.ts >= t) { mins += e.min; count++; }
+        }
+        return { min: mins, count };
+      };
+
+      const last30 = [];
+      let peak = 0;
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(startToday); d.setDate(d.getDate() - i);
+        const next = new Date(d); next.setDate(next.getDate() + 1);
+        let mins = 0;
+        for (const e of log) {
+          if (e.ts >= d.getTime() && e.ts < next.getTime()) mins += e.min;
+        }
+        peak = Math.max(peak, mins);
+        last30.push({
+          date: d.toISOString().slice(0,10),
+          shortDate: `${d.getMonth()+1}/${d.getDate()}`,
+          min: mins,
+          isToday: i === 0,
+          label: `${d.getMonth()+1}/${d.getDate()} · ${formatMinutes(mins)}m`,
+        });
+      }
+
+      const meta = loadMeta();
+      const sinceTs = meta.firstTs || (log.length ? log[0].ts : null);
+      const sinceLabel = sinceTs
+        ? new Date(sinceTs).toISOString().slice(0,10)
+        : "—";
+
+      const all = (() => {
+        let mins = 0;
+        for (const e of log) mins += e.min;
+        return { min: mins, count: log.length, since: sinceLabel };
+      })();
+
+      return {
+        today: sumSince(startToday.getTime()),
+        week:  sumSince(startWeek.getTime()),
+        month: sumSince(startMonth.getTime()),
+        year:  sumSince(startYear.getTime()),
+        all,
+        last30,
+        peak30: peak,
+      };
+    });
+
+    const save = () => {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...state, running: false })); } catch {}
+    };
+
+    function loadPhase(i, { resetTime = true } = {}) {
+      state.idx = ((i % state.session.length) + state.session.length) % state.session.length;
+      const p = state.session[state.idx];
+      state.totalMs = p.min * 60 * 1000;
+      if (resetTime) state.remainingMs = state.totalMs;
+      save();
+    }
+    function jumpTo(i) { pause(); loadPhase(i); }
+
+    let rafId = null;
+    let lastTick = 0;
+    function tick() {
+      if (!state.running) return;
+      const now = performance.now();
+      state.remainingMs -= now - lastTick;
+      lastTick = now;
+      if (state.remainingMs <= 0) {
+        state.remainingMs = 0;
+        state.running = false;
+        rafId = null;
+        if (currentPhase.value.type === "focus") {
+          recordFocus(currentPhase.value.min);
+        }
+        triggerAlert();
+        save();
+        advance(true);
+        releaseWakeLock();
+        return;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    function start() {
+      if (state.running) return;
+      if (state.remainingMs <= 0) {
+        state.totalMs = currentPhase.value.min * 60 * 1000;
+        state.remainingMs = state.totalMs;
+      }
+      state.running = true;
+      lastTick = performance.now();
+      unlockAudio();
+      requestWakeLock();
+      tick();
+      save();
+    }
+    function pause() {
+      if (!state.running) return;
+      state.running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      releaseWakeLock();
+      save();
+    }
+    function toggle() { state.running ? pause() : start(); }
+    function reset() {
+      pause();
+      state.totalMs = currentPhase.value.min * 60 * 1000;
+      state.remainingMs = state.totalMs;
+      save();
+    }
+    function skip() { pause(); advance(false); }
+    function advance(autoStart) {
+      const next = state.idx + 1;
+      if (next >= state.session.length) {
+        if (state.loop) loadPhase(0);
+        else { loadPhase(state.session.length - 1); return; }
+      } else {
+        loadPhase(next);
+      }
+      if (autoStart && state.autoAdvance) start();
+    }
+
+    function enterEdit() {
+      if (state.running || editing.value) return;
+      editValue.value = `${minutes.value}:${seconds.value}`;
+      editing.value = true;
+      nextTick(() => { editEl.value?.focus(); editEl.value?.select(); });
+    }
+    function commitEdit() {
+      if (!editing.value) return;
+      const raw = editValue.value.trim();
+      let ms = null;
+      const m1 = raw.match(/^(\d+):([0-5]?\d)$/);
+      const m2 = raw.match(/^(\d+(?:\.\d+)?)$/);
+      if (m1) ms = (Number(m1[1]) * 60 + Number(m1[2])) * 1000;
+      else if (m2) ms = Math.round(Number(m2[1]) * 60 * 1000);
+      if (ms !== null && ms >= 1000 && ms <= 240 * 60 * 1000) {
+        state.totalMs = ms;
+        state.remainingMs = ms;
+        state.session[state.idx].min = +(ms / 60000).toFixed(2);
+        save();
+      }
+      editing.value = false;
+    }
+    function cancelEdit() { editing.value = false; }
+
+    function onWheel(e) {
+      if (state.running || editing.value) return;
+      const delta = e.deltaY > 0 ? -60_000 : 60_000;
+      const next = Math.max(60_000, Math.min(240 * 60_000, state.totalMs + delta));
+      state.totalMs = next;
+      state.remainingMs = next;
+      state.session[state.idx].min = next / 60000;
+      save();
+    }
+
+    function recordFocus(min) {
+      const log = statsLog.value.slice();
+      log.push({ ts: Date.now(), type: "focus", min });
+      const cutoff = Date.now() - 5 * 365 * 24 * 60 * 60 * 1000;
+      const trimmed = log.filter(e => e.ts >= cutoff);
+      statsLog.value = trimmed;
+      saveStatsLog(trimmed);
+      const meta = loadMeta();
+      if (!meta.firstTs) { meta.firstTs = Date.now(); saveMeta(meta); }
+    }
+    function confirmResetStats() {
+      if (confirm("reset all focus stats? this cannot be undone.")) {
+        statsLog.value = [];
+        saveStatsLog([]);
+        saveMeta({});
+      }
+    }
+
+    let audioCtx = null;
+    function unlockAudio() {
+      if (!state.sound) return;
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+    function chime() {
+      if (!state.sound) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const t0 = audioCtx.currentTime;
+        const notes = [
+          { f: 660,  t: 0.0,  d: 0.7,  v: 0.18 },
+          { f: 990,  t: 0.18, d: 0.85, v: 0.18 },
+          { f: 1320, t: 0.36, d: 1.0,  v: 0.16 },
+        ];
+        for (const n of notes) {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = n.f;
+          g.gain.setValueAtTime(0.0001, t0 + n.t);
+          g.gain.exponentialRampToValueAtTime(n.v, t0 + n.t + 0.05);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.t + n.d);
+          osc.connect(g); g.connect(audioCtx.destination);
+          osc.start(t0 + n.t); osc.stop(t0 + n.t + n.d + 0.05);
+        }
+      } catch {}
+    }
+
+    let alertChimeTimer = null;
+    let titleFlashTimer = null;
+    function triggerAlert() {
+      const intensity = state.alertIntensity || "strong";
+      const next = state.session[(state.idx + 1) % state.session.length];
+      alertLabel.value = `${LABELS[currentPhase.value.type]} done`;
+      alertNext.value = `${LABELS[next.type]} · ${next.min}m`;
+
+      chime();
+      flashKey.value++;
+      notify();
+
+      if (intensity === "gentle") return;
+
+      let n = 0;
+      titleFlashTimer = setInterval(() => {
+        document.title = (n++ % 2 === 0) ? "▌▌  time" : `pomodoro · ${LABELS[currentPhase.value.type]} done`;
+        if (n > 12) { clearInterval(titleFlashTimer); titleFlashTimer = null; updateTitle(); }
+      }, 500);
+
+      if (intensity === "persistent") {
+        alerting.value = true;
+        let count = 0;
+        alertChimeTimer = setInterval(() => {
+          chime();
+          if (++count >= 6) { clearInterval(alertChimeTimer); alertChimeTimer = null; }
+        }, 1800);
+      } else {
+        setTimeout(() => chime(), 1200);
+      }
+    }
+    function dismissAlert() {
+      alerting.value = false;
+      if (alertChimeTimer) { clearInterval(alertChimeTimer); alertChimeTimer = null; }
+      if (titleFlashTimer) { clearInterval(titleFlashTimer); titleFlashTimer = null; updateTitle(); }
+    }
+
+    function notify() {
+      if (!state.notify) return;
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission !== "granted") return;
+      const next = state.session[(state.idx + 1) % state.session.length];
+      try {
+        new Notification(`${LABELS[currentPhase.value.type]} done`, {
+          body: `next: ${LABELS[next.type]} · ${next.min}m`,
+          silent: false,
+          requireInteraction: state.alertIntensity === "persistent",
+        });
+      } catch {}
+    }
+    function ensureNotifPerm() {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
+    }
+
+    let wakeLockSentinel = null;
+    async function requestWakeLock() {
+      if (!state.wakeLock) return;
+      if (!("wakeLock" in navigator)) return;
+      try {
+        wakeLockSentinel = await navigator.wakeLock.request("screen");
+        wakeLockSentinel.addEventListener("release", () => { wakeLockSentinel = null; });
+      } catch {}
+    }
+    function releaseWakeLock() {
+      try { wakeLockSentinel?.release(); } catch {}
+      wakeLockSentinel = null;
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && state.running) requestWakeLock();
+    });
+
+    const faviconEl = document.getElementById("favicon");
+    function updateFavicon() {
+      if (!state.dynamicFavicon) {
+        faviconEl.href = "data:image/svg+xml," + encodeURIComponent(
+          `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#0a0a0a'/><circle cx='32' cy='32' r='26' fill='none' stroke='#ededed' stroke-width='4'/></svg>`
+        );
+        return;
+      }
+      const f = progressFrac.value;
+      const c = 2 * Math.PI * 26;
+      const off = c * (1 - f);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+        <rect width='64' height='64' fill='#0a0a0a'/>
+        <circle cx='32' cy='32' r='26' fill='none' stroke='#2a2a2d' stroke-width='4'/>
+        <circle cx='32' cy='32' r='26' fill='none' stroke='#ededed' stroke-width='4'
+                stroke-dasharray='${c.toFixed(2)}' stroke-dashoffset='${off.toFixed(2)}'
+                transform='rotate(-90 32 32)' stroke-linecap='butt'/>
+      </svg>`;
+      faviconEl.href = "data:image/svg+xml," + encodeURIComponent(svg);
+    }
+
+    function updateTitle() {
+      document.title = (state.running || state.remainingMs < state.totalMs)
+        ? `${minutes.value}:${seconds.value}`
+        : `pomodoro`;
+    }
+    watch(() => [state.remainingMs, state.totalMs, state.idx, state.running], () => {
+      if (!titleFlashTimer) updateTitle();
+      updateFavicon();
+    }, { immediate: true });
+    watch(() => state.dynamicFavicon, updateFavicon);
+
+    function openTab(t) {
+      tab.value = t;
+      Object.assign(draft, JSON.parse(JSON.stringify({
+        session: state.session,
+        autoAdvance: state.autoAdvance,
+        sound: state.sound,
+        notify: state.notify,
+        loop: state.loop,
+        alertIntensity: state.alertIntensity,
+        wakeLock: state.wakeLock,
+        showTotalBar: state.showTotalBar,
+        dynamicFavicon: state.dynamicFavicon,
+      })));
+      showModal.value = true;
+    }
+    function closeModal(commit) {
+      if (commit) {
+        const cleaned = (draft.session || []).filter(p => Number(p.min) > 0 && ["focus","short","long"].includes(p.type))
+          .map(p => ({ type: p.type, min: Math.min(240, Math.max(0.1, Number(p.min) || 0)) }));
+        if (cleaned.length === 0) cleaned.push({ type: "focus", min: 25 });
+        const sessionChanged = JSON.stringify(cleaned) !== JSON.stringify(state.session);
+        state.session = cleaned;
+        state.autoAdvance = !!draft.autoAdvance;
+        state.sound = !!draft.sound;
+        state.notify = !!draft.notify;
+        state.loop = !!draft.loop;
+        state.alertIntensity = draft.alertIntensity || "strong";
+        state.wakeLock = !!draft.wakeLock;
+        state.showTotalBar = !!draft.showTotalBar;
+        state.dynamicFavicon = !!draft.dynamicFavicon;
+        if (state.notify) ensureNotifPerm();
+        if (sessionChanged) {
+          state.idx = Math.min(state.idx, state.session.length - 1);
+          if (!state.running) {
+            state.totalMs = state.session[state.idx].min * 60 * 1000;
+            state.remainingMs = state.totalMs;
+          }
+        }
+        save();
+        updateFavicon();
+      }
+      showModal.value = false;
+    }
+
+    function addPhase() {
+      const last = draft.session[draft.session.length - 1];
+      const type = last && last.type === "focus" ? "short" : "focus";
+      const min = type === "focus" ? 25 : type === "short" ? 5 : 15;
+      draft.session.push({ type, min });
+    }
+    function removePhase(i) { if (draft.session.length > 1) draft.session.splice(i, 1); }
+    function loadPreset(name) { if (PRESETS[name]) draft.session = PRESETS[name](); }
+
+    function onDragStart(i, e) {
+      dragIdx.value = i;
+      e.dataTransfer.effectAllowed = "move";
+    }
+    function onDragOver(i) { dragOverIdx.value = i; }
+    function onDragLeave(i) { if (dragOverIdx.value === i) dragOverIdx.value = -1; }
+    function onDrop(i) {
+      const from = dragIdx.value;
+      if (from < 0 || from === i) { dragIdx.value = -1; dragOverIdx.value = -1; return; }
+      const item = draft.session.splice(from, 1)[0];
+      const to = from < i ? i - 1 : i;
+      draft.session.splice(to, 0, item);
+      dragIdx.value = -1; dragOverIdx.value = -1;
+    }
+    function onDragEnd() { dragIdx.value = -1; dragOverIdx.value = -1; }
+
+    function toggleFullscreen() {
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      else document.documentElement.requestFullscreen?.();
+    }
+
+    let idleTimer = null;
+    function bumpIdle() {
+      idle.value = false;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => { idle.value = true; }, 3500);
+    }
+
+    function onKey(e) {
+      if (e.target.matches?.("input, textarea, select")) return;
+      if (alerting.value) { dismissAlert(); return; }
+      switch (e.key) {
+        case " ": e.preventDefault(); toggle(); break;
+        case "r": case "R": reset(); break;
+        case "n": case "N": skip(); break;
+        case "f": case "F": toggleFullscreen(); break;
+        case "e": case "E": enterEdit(); break;
+        case "s": case "S": openTab("session"); break;
+        case ",": openTab("settings"); break;
+        case "Escape": if (showModal.value) closeModal(false); else if (editing.value) cancelEdit(); break;
+        case "ArrowUp":
+          if (!state.running && !editing.value) {
+            const step = e.shiftKey ? 5 * 60_000 : 60_000;
+            const next = Math.min(240 * 60_000, state.totalMs + step);
+            state.totalMs = next; state.remainingMs = next;
+            state.session[state.idx].min = next / 60000;
+            save(); e.preventDefault();
+          } break;
+        case "ArrowDown":
+          if (!state.running && !editing.value) {
+            const step = e.shiftKey ? 5 * 60_000 : 60_000;
+            const next = Math.max(60_000, state.totalMs - step);
+            state.totalMs = next; state.remainingMs = next;
+            state.session[state.idx].min = next / 60000;
+            save(); e.preventDefault();
+          } break;
+      }
+      bumpIdle();
+    }
+
+    let nowTimer = null;
+    onMounted(() => {
+      updateTitle();
+      updateFavicon();
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("mousemove", bumpIdle, { passive: true });
+      window.addEventListener("touchstart", bumpIdle, { passive: true });
+      bumpIdle();
+      if (state.notify) ensureNotifPerm();
+      nowTimer = setInterval(() => { nowTick.value = Date.now(); }, 1000);
+    });
+    onUnmounted(() => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousemove", bumpIdle);
+      window.removeEventListener("touchstart", bumpIdle);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (nowTimer) clearInterval(nowTimer);
+      releaseWakeLock();
+    });
+
+    return {
+      state, idle, showModal, tab, draft,
+      editing, editValue, editEl,
+      flashKey, alerting, alertLabel, alertNext,
+      dragIdx, dragOverIdx, stats,
+      phaseLabel, progressFrac, minutes, seconds, etaText,
+      totalProgress, totalRemainingLabel,
+      labelOf, totalMinutes, formatMinutes,
+      toggle, reset, skip, jumpTo,
+      enterEdit, commitEdit, cancelEdit, onWheel,
+      openTab, closeModal,
+      addPhase, removePhase, loadPreset,
+      onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
+      toggleFullscreen,
+      dismissAlert, confirmResetStats,
+    };
+  },
+}).mount("#app");
+</script>
+</body>
+</html>
