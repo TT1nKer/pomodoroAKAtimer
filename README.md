@@ -3,14 +3,17 @@
 a minimalist pomodoro timer. single-file html, vue 3 bundled, runs offline.
 
 ```
-timer.html         # the entire app — open it in a browser
+index.html         # the entire app — open it in a browser
 vue.global.prod.js # vue runtime (offline)
 bridge.py          # optional, linux-only: exposes the desktop music player
 ```
 
+live: <https://tt1nker.github.io/pomodoroAKAtimer/>
+
 ## use
 
-open `timer.html` in a browser. press `f` for fullscreen.
+open `index.html` in a browser, or visit the live link above.
+press `f` for fullscreen.
 
 - `space` start / pause
 - `n` next phase · `r` reset
