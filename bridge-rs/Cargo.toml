@@ -1,0 +1,29 @@
+[package]
+name = "timer-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "cross-platform media bridge for the timer ui"
+license = "MIT"
+
+[dependencies]
+tiny_http = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+mpris = "2.0"
+
+# macos / windows backends are stubs for now; deps are listed but commented
+# until those backends are actually implemented.
+#
+# [target.'cfg(target_os = "macos")'.dependencies]
+# objc = "0.2"
+# core-foundation = "0.10"
+#
+# [target.'cfg(target_os = "windows")'.dependencies]
+# windows = { version = "0.58", features = ["Media_Control", "Foundation"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
