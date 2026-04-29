@@ -876,18 +876,20 @@ body {
         </div>
         <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
           <template v-if="musicStatus === 'disconnected'">
-            <span style="color:#d97777;">cannot reach bridge.</span> start it with:<br>
-            <span style="color:var(--muted);">python bridge.py</span> (in the timer folder)<br>
-            needs <span style="color:var(--muted);">playerctl</span> · linux only · works with any mpris-aware player.
+            <span style="color:#d97777;">cannot reach bridge.</span> start the binary, or download it:<br>
+            <a href="https://github.com/TT1nKer/pomodoroAKAtimer/releases/latest" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);">github releases ↗</a>
+            · linux / macos / windows · ~600 kb single file.
           </template>
           <template v-else-if="musicStatus === 'connected'">
-            reading from mpris. supports spotify desktop, netease cloud,<br>
-            mpd, browser players, and anything else publishing mpris.
+            reading from <span style="color:var(--muted);">{{ music && music.player ? music.player.toLowerCase() : 'system' }}</span>. <br>
+            supports spotify, apple music, netease cloud, mpd, browser players, etc.
           </template>
           <template v-else>
-            optional linux daemon that exposes your music player to the timer.<br>
-            run <span style="color:var(--muted);">python bridge.py</span> in this folder, then enable above.<br>
-            requires <span style="color:var(--muted);">playerctl</span>.
+            optional local daemon — exposes your desktop music player to the timer.<br>
+            download:
+            <a href="https://github.com/TT1nKer/pomodoroAKAtimer/releases/latest" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);">github releases ↗</a>
+            (linux / macos / windows). then run it, enable above.<br>
+            source: <a href="https://github.com/TT1nKer/pomodoroAKAtimer" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);">github.com/TT1nKer/pomodoroAKAtimer ↗</a>
           </template>
         </div>
       </template>
