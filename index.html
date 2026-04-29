@@ -673,6 +673,81 @@ body {
   text-transform: lowercase;
 }
 .danger:hover { color: #d97777; }
+
+/* ── companion (peeking minimalist cat) ─────────────────────── */
+.companion {
+  position: fixed;
+  z-index: 6;
+  width: 88px;
+  height: 70px;
+  color: var(--text);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: opacity 0.5s ease, filter 0.3s ease;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.25));
+}
+.companion.dragging { cursor: grabbing; transition: none; }
+.companion svg { width: 100%; height: 100%; overflow: visible; display: block; }
+
+/* idle breathing */
+.companion .body { transform-origin: 50% 70%; animation: catBreathe 4s ease-in-out infinite; }
+@keyframes catBreathe {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.04); }
+}
+
+/* tail sway */
+.companion .tail { transform-origin: 78px 50px; animation: catTail 3s ease-in-out infinite; }
+@keyframes catTail {
+  0%, 100% { transform: rotate(-4deg); }
+  50%      { transform: rotate(6deg); }
+}
+
+/* blink — random-feeling via long-gap step animation */
+.companion .eye { transform-origin: 50% 50%; animation: catBlink 6s step-end infinite; }
+.companion .eye.right { animation-delay: 0s; }
+@keyframes catBlink {
+  0%, 96%, 100% { transform: scaleY(1); }
+  97%, 99%      { transform: scaleY(0.1); }
+}
+
+/* mood: focus — slightly squinted, less tail motion */
+.companion.mood-focus .eye { animation: none; transform: scaleY(0.6); }
+.companion.mood-focus .tail { animation-duration: 6s; }
+
+/* mood: break — eyes closed (sleep arcs), body lower */
+.companion.mood-break .eye { animation: none; transform: scaleY(0.05); }
+.companion.mood-break .eye-closed { opacity: 1; }
+.companion.mood-break .body { animation: catSleep 5s ease-in-out infinite; }
+@keyframes catSleep {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(1px) scaleY(0.97); }
+}
+.companion .eye-closed { opacity: 0; transition: opacity 0.4s; }
+
+/* mood: alert — ears perk, full body bounce */
+.companion.mood-alert { animation: catAlert 0.4s ease-out 3; }
+.companion.mood-alert .ear { transform: translateY(-2px); }
+@keyframes catAlert {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* edge peek: when anchored to right/left/bottom, only ~half visible */
+.companion.edge-right  { transform: translateX(50%); }
+.companion.edge-left   { transform: translateX(-50%); }
+.companion.edge-bottom { transform: translateY(55%); }
+.companion.edge-right.dragging,
+.companion.edge-left.dragging,
+.companion.edge-bottom.dragging { transform: none; }
+
+.companion.edge-left:hover  { transform: translateX(-30%); transition: transform 0.4s; }
+.companion.edge-right:hover { transform: translateX(30%);  transition: transform 0.4s; }
+.companion.edge-bottom:hover { transform: translateY(35%); transition: transform 0.4s; }
+
+.idle .companion { opacity: 0.5; }
 </style>
 </head>
 <body :class="{ idle, running: state.running }">
@@ -764,6 +839,53 @@ body {
     </span>
   </div>
 
+  <div v-if="state.companionEnabled"
+       class="companion"
+       :class="['mood-' + companionMood, 'edge-' + companionEdge, { dragging: companionDragging }]"
+       :style="{ left: companion.x + 'px', top: companion.y + 'px' }"
+       @pointerdown="onCompanionDown"
+       @pointermove="onCompanionMove"
+       @pointerup="onCompanionUp"
+       @pointercancel="onCompanionUp"
+       title="drag me anywhere">
+    <svg viewBox="0 0 100 80" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- tail -->
+      <path class="tail" d="M 78 50 Q 92 44 88 28 Q 86 20 80 22"
+            stroke-width="1.6"/>
+      <!-- body group (head + body together for breathing transform) -->
+      <g class="body">
+        <!-- body -->
+        <ellipse cx="50" cy="56" rx="26" ry="16" stroke-width="1.6"/>
+        <!-- front paws -->
+        <line x1="40" y1="71" x2="40" y2="74" stroke-width="1.6"/>
+        <line x1="60" y1="71" x2="60" y2="74" stroke-width="1.6"/>
+        <!-- head -->
+        <circle cx="50" cy="34" r="15" stroke-width="1.6"/>
+        <!-- ears -->
+        <path class="ear" d="M 38 24 L 35 13 L 44 19 Z" stroke-width="1.6"/>
+        <path class="ear" d="M 62 24 L 65 13 L 56 19 Z" stroke-width="1.6"/>
+        <!-- inner ear hint -->
+        <path d="M 39 21 L 38 16 L 42 19" stroke-width="0.8" opacity="0.45"/>
+        <path d="M 61 21 L 62 16 L 58 19" stroke-width="0.8" opacity="0.45"/>
+        <!-- eyes (open) -->
+        <ellipse class="eye left"  cx="44" cy="33" rx="1.4" ry="2.2" fill="currentColor" stroke="none"/>
+        <ellipse class="eye right" cx="56" cy="33" rx="1.4" ry="2.2" fill="currentColor" stroke="none"/>
+        <!-- eyes (closed sleep arcs — shown only in break mood) -->
+        <path class="eye-closed" d="M 42 33 Q 44 35 46 33" stroke-width="1" fill="none"/>
+        <path class="eye-closed" d="M 54 33 Q 56 35 58 33" stroke-width="1" fill="none"/>
+        <!-- nose -->
+        <path d="M 49 38 L 51 38 L 50 39.4 Z" fill="currentColor" stroke="none"/>
+        <!-- mouth -->
+        <path d="M 50 39.4 Q 47.5 40.6 46.8 39.6 M 50 39.4 Q 52.5 40.6 53.2 39.6" stroke-width="0.8"/>
+        <!-- whiskers -->
+        <line x1="40" y1="36.5" x2="32" y2="34.5" stroke-width="0.5"/>
+        <line x1="40" y1="38"   x2="32" y2="38"   stroke-width="0.5"/>
+        <line x1="60" y1="36.5" x2="68" y2="34.5" stroke-width="0.5"/>
+        <line x1="60" y1="38"   x2="68" y2="38"   stroke-width="0.5"/>
+      </g>
+    </svg>
+  </div>
+
   <div class="flash" v-if="flashKey" :key="flashKey"></div>
 
   <div class="alert-modal" v-if="alerting" @click="dismissAlert">
@@ -838,6 +960,14 @@ body {
         <div class="field"><label>keep screen awake</label><label class="switch"><input type="checkbox" v-model="draft.wakeLock"><span class="slider"></span></label></div>
         <div class="field"><label>show session total bar</label><label class="switch"><input type="checkbox" v-model="draft.showTotalBar"><span class="slider"></span></label></div>
         <div class="field"><label>dynamic favicon</label><label class="switch"><input type="checkbox" v-model="draft.dynamicFavicon"><span class="slider"></span></label></div>
+
+        <div class="section-h" style="margin-top: 1.6rem;">companion</div>
+        <div class="field"><label>show desk cat</label><label class="switch"><input type="checkbox" v-model="state.companionEnabled"><span class="slider"></span></label></div>
+        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+          a tiny line-art cat that lives on the edge of your screen.<br>
+          drag it anywhere · sleeps during breaks · perks up when phases end.<br>
+          <a @click="resetCompanionPosition" style="color:var(--muted);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);">reset position →</a>
+        </div>
 
         <div class="section-h" style="margin-top: 1.6rem;">ambient sound</div>
         <div class="field">
@@ -1006,6 +1136,10 @@ function defaultState() {
     musicBridgeUrl: "http://localhost:7777",
     ambientType: "off",
     ambientVolume: 35,
+    companionEnabled: false,
+    companionX: typeof window !== "undefined" ? Math.max(0, window.innerWidth - 80) : 1200,
+    companionY: typeof window !== "undefined" ? Math.max(0, window.innerHeight - 110) : 600,
+    companionEdge: "right",
   };
 }
 function loadState() {
@@ -1035,6 +1169,10 @@ function loadState() {
       musicBridgeUrl: typeof p.musicBridgeUrl === "string" && p.musicBridgeUrl ? p.musicBridgeUrl : "http://localhost:7777",
       ambientType: ["off","white","pink","brown"].includes(p.ambientType) ? p.ambientType : "off",
       ambientVolume: typeof p.ambientVolume === "number" ? Math.max(0, Math.min(100, p.ambientVolume)) : 35,
+      companionEnabled: !!p.companionEnabled,
+      companionX: typeof p.companionX === "number" ? p.companionX : (typeof window !== "undefined" ? Math.max(0, window.innerWidth - 80) : 1200),
+      companionY: typeof p.companionY === "number" ? p.companionY : (typeof window !== "undefined" ? Math.max(0, window.innerHeight - 110) : 600),
+      companionEdge: ["left","right","bottom","none"].includes(p.companionEdge) ? p.companionEdge : "right",
     };
   } catch { return defaultState(); }
 }
@@ -1080,6 +1218,78 @@ createApp({
 
     const statsLog = ref(loadStatsLog());
     const nowTick = ref(Date.now());
+
+    /* ── companion (dragable peeking cat) ─────────────── */
+    const companion = reactive({ x: state.companionX, y: state.companionY });
+    const companionEdge = computed(() => state.companionEdge);
+    const companionDragging = ref(false);
+    const alertPulse = ref(0);  // bumped on phase end, holds for 2s
+    const dragOffset = { x: 0, y: 0 };
+
+    const companionMood = computed(() => {
+      if (companionDragging.value) return "drag";
+      if (alertPulse.value > 0) return "alert";
+      if (state.running) {
+        const t = state.session[state.idx]?.type || "focus";
+        if (t === "focus") return "focus";
+        return "break";
+      }
+      return "idle";
+    });
+
+    function onCompanionDown(e) {
+      companionDragging.value = true;
+      dragOffset.x = e.clientX - companion.x;
+      dragOffset.y = e.clientY - companion.y;
+      e.target.setPointerCapture?.(e.pointerId);
+      state.companionEdge = "none";
+    }
+    function onCompanionMove(e) {
+      if (!companionDragging.value) return;
+      companion.x = e.clientX - dragOffset.x;
+      companion.y = e.clientY - dragOffset.y;
+    }
+    function onCompanionUp(e) {
+      if (!companionDragging.value) return;
+      companionDragging.value = false;
+      e.target.releasePointerCapture?.(e.pointerId);
+      // snap to nearest edge if within threshold
+      const w = window.innerWidth, h = window.innerHeight;
+      const SNAP = 80;
+      const distLeft   = companion.x;
+      const distRight  = w - 88 - companion.x;
+      const distBottom = h - 70 - companion.y;
+      let edge = "none";
+      const minDist = Math.min(distLeft, distRight, distBottom);
+      if (minDist < SNAP) {
+        if (minDist === distLeft)   { companion.x = 0;          edge = "left"; }
+        else if (minDist === distRight) { companion.x = w - 88;  edge = "right"; }
+        else                        { companion.y = h - 70;     edge = "bottom"; }
+      }
+      // clamp inside viewport
+      companion.x = Math.max(-44, Math.min(w - 44, companion.x));
+      companion.y = Math.max(-35, Math.min(h - 35, companion.y));
+      state.companionX = companion.x;
+      state.companionY = companion.y;
+      state.companionEdge = edge;
+      save();
+    }
+    function resetCompanionPosition() {
+      const w = window.innerWidth, h = window.innerHeight;
+      companion.x = w - 88;
+      companion.y = h - 110;
+      state.companionX = companion.x;
+      state.companionY = companion.y;
+      state.companionEdge = "right";
+      save();
+    }
+    function clampCompanionToViewport() {
+      const w = window.innerWidth, h = window.innerHeight;
+      companion.x = Math.max(-44, Math.min(w - 44, companion.x));
+      companion.y = Math.max(-35, Math.min(h - 35, companion.y));
+      state.companionX = companion.x;
+      state.companionY = companion.y;
+    }
 
     const music = ref(null);
     const musicStatus = ref("off");  // "off" | "connected" | "disconnected"
@@ -1266,6 +1476,8 @@ createApp({
           recordFocus(currentPhase.value.min);
         }
         triggerAlert();
+        alertPulse.value++;
+        setTimeout(() => { alertPulse.value = Math.max(0, alertPulse.value - 1); }, 2000);
         save();
         advance(true);
         releaseWakeLock();
@@ -1698,6 +1910,7 @@ createApp({
       window.addEventListener("keydown", onKey);
       window.addEventListener("mousemove", bumpIdle, { passive: true });
       window.addEventListener("click", () => { feedbackOpen.value = false; });
+      window.addEventListener("resize", clampCompanionToViewport);
       window.addEventListener("touchstart", bumpIdle, { passive: true });
       bumpIdle();
       if (state.notify) ensureNotifPerm();
@@ -1725,6 +1938,7 @@ createApp({
       if (t === "off") stopAmbient(); else startAmbient(t);
     });
     watch(() => state.ambientVolume, (v) => setAmbientGain(v));
+    watch(() => state.companionEnabled, () => save());
 
     return {
       state, idle, showModal, feedbackOpen, tab, draft,
@@ -1732,6 +1946,8 @@ createApp({
       flashKey, alerting, alertLabel, alertNext,
       dragIdx, dragOverIdx, stats,
       music, musicStatus, musicCtrl, npInner, marqueeStyle, startMarquee, stopMarquee,
+      companion, companionEdge, companionMood, companionDragging,
+      onCompanionDown, onCompanionMove, onCompanionUp, resetCompanionPosition,
       phaseLabel, progressFrac, minutes, seconds, etaText,
       totalProgress, totalRemainingLabel,
       labelOf, totalMinutes, formatMinutes,
