@@ -812,7 +812,7 @@ body {
         <div class="section-h" style="margin-top: 1.6rem;">ambient sound</div>
         <div class="field">
           <label>noise</label>
-          <select v-model="draft.ambientType">
+          <select v-model="state.ambientType">
             <option value="off">off</option>
             <option value="white">white noise</option>
             <option value="pink">pink noise</option>
@@ -821,8 +821,8 @@ body {
         </div>
         <div class="field">
           <label>volume</label>
-          <input type="range" min="0" max="100" step="1" v-model.number="draft.ambientVolume">
-          <span class="num">{{ draft.ambientVolume }}</span>
+          <input type="range" min="0" max="100" step="1" v-model.number="state.ambientVolume">
+          <span class="num">{{ state.ambientVolume }}</span>
         </div>
         <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
           generated in-browser via web audio. no files, no network.<br>
@@ -1535,8 +1535,10 @@ createApp({
     }, { immediate: true });
     watch(() => state.dynamicFavicon, updateFavicon);
 
+    let ambientSnapshot = null;
     function openTab(t) {
       tab.value = t;
+      ambientSnapshot = { type: state.ambientType, volume: state.ambientVolume };
       Object.assign(draft, JSON.parse(JSON.stringify({
         session: state.session,
         autoAdvance: state.autoAdvance,
@@ -1549,8 +1551,6 @@ createApp({
         dynamicFavicon: state.dynamicFavicon,
         musicEnabled: state.musicEnabled,
         musicBridgeUrl: state.musicBridgeUrl,
-        ambientType: state.ambientType,
-        ambientVolume: state.ambientVolume,
       })));
       showModal.value = true;
     }
@@ -1571,8 +1571,6 @@ createApp({
         state.dynamicFavicon = !!draft.dynamicFavicon;
         state.musicEnabled = !!draft.musicEnabled;
         state.musicBridgeUrl = (draft.musicBridgeUrl || "").trim().replace(/\/+$/, "") || "http://localhost:7777";
-        state.ambientType = ["off","white","pink","brown"].includes(draft.ambientType) ? draft.ambientType : "off";
-        state.ambientVolume = Math.max(0, Math.min(100, Number(draft.ambientVolume) || 0));
         if (state.notify) ensureNotifPerm();
         if (sessionChanged) {
           state.idx = Math.min(state.idx, state.session.length - 1);
@@ -1583,7 +1581,13 @@ createApp({
         }
         save();
         updateFavicon();
+      } else if (ambientSnapshot) {
+        // cancel: revert any live ambient preview
+        state.ambientType = ambientSnapshot.type;
+        state.ambientVolume = ambientSnapshot.volume;
+        save();
       }
+      ambientSnapshot = null;
       showModal.value = false;
     }
 
