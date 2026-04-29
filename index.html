@@ -865,76 +865,32 @@ body {
       </g>
     </svg>
 
-    <!-- pose: bottom (cat clinging from below, head + paws hooked over the bottom edge) -->
-    <svg v-else-if="companionPose === 'bottom'" viewBox="0 0 88 50" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <g class="body">
-        <!-- two paws hooked over the edge (the bottom of the SVG = bottom of viewport) -->
-        <path d="M 22 50 L 22 36 Q 22 32 26 32 Q 30 32 30 38 L 30 44" stroke-width="1.6"/>
-        <path d="M 66 50 L 66 36 Q 66 32 62 32 Q 58 32 58 38 L 58 44" stroke-width="1.6"/>
-        <!-- head, peeking up between the paws -->
-        <circle cx="44" cy="22" r="14" stroke-width="1.6"/>
-        <!-- ears -->
-        <path class="ear" d="M 33 13 L 30 3 L 39 8 Z" stroke-width="1.6"/>
-        <path class="ear" d="M 55 13 L 58 3 L 49 8 Z" stroke-width="1.6"/>
-        <path d="M 34 10 L 33 5 L 37 8" stroke-width="0.8" opacity="0.45"/>
-        <path d="M 54 10 L 55 5 L 51 8" stroke-width="0.8" opacity="0.45"/>
-        <!-- eyes looking up -->
-        <ellipse class="eye" cx="38" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <ellipse class="eye" cx="50" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <path class="eye-closed" d="M 36 20 Q 38 22 40 20" stroke-width="1" fill="none"/>
-        <path class="eye-closed" d="M 48 20 Q 50 22 52 20" stroke-width="1" fill="none"/>
-        <!-- nose & mouth -->
-        <path d="M 43 26 L 45 26 L 44 27.4 Z" fill="currentColor" stroke="none"/>
-        <path d="M 44 27.4 Q 41.5 28.6 40.8 27.6 M 44 27.4 Q 46.5 28.6 47.2 27.6" stroke-width="0.8"/>
-        <!-- whiskers -->
-        <line x1="34" y1="24.5" x2="26" y2="22.5" stroke-width="0.5"/>
-        <line x1="34" y1="26"   x2="26" y2="26"   stroke-width="0.5"/>
-        <line x1="54" y1="24.5" x2="62" y2="22.5" stroke-width="0.5"/>
-        <line x1="54" y1="26"   x2="62" y2="26"   stroke-width="0.5"/>
-      </g>
-    </svg>
-
-    <!-- pose: right (cat to the right of viewport, peeking from right edge — face toward left) -->
-    <svg v-else-if="companionPose === 'right'" viewBox="0 0 56 70" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <g class="body">
-        <!-- head positioned in the left half, peeking around the edge -->
-        <circle cx="22" cy="32" r="14" stroke-width="1.6"/>
-        <path class="ear" d="M 11 23 L  8 13 L 17 18 Z" stroke-width="1.6"/>
-        <path class="ear" d="M 33 23 L 36 13 L 27 18 Z" stroke-width="1.6"/>
-        <path d="M 12 20 L 11 15 L 15 17" stroke-width="0.8" opacity="0.45"/>
-        <path d="M 32 20 L 33 15 L 29 17" stroke-width="0.8" opacity="0.45"/>
-        <ellipse class="eye" cx="16" cy="31" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <ellipse class="eye" cx="28" cy="31" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <path class="eye-closed" d="M 14 31 Q 16 33 18 31" stroke-width="1" fill="none"/>
-        <path class="eye-closed" d="M 26 31 Q 28 33 30 31" stroke-width="1" fill="none"/>
-        <path d="M 21 36 L 23 36 L 22 37.4 Z" fill="currentColor" stroke="none"/>
-        <path d="M 22 37.4 Q 19.5 38.6 18.8 37.6 M 22 37.4 Q 24.5 38.6 25.2 37.6" stroke-width="0.8"/>
-        <line x1="12" y1="34.5" x2="4" y2="32.5" stroke-width="0.5"/>
-        <line x1="12" y1="36"   x2="4" y2="36"   stroke-width="0.5"/>
-        <!-- two paws originating from the head/body, reaching to the right edge to grip -->
-        <path d="M 28 46 Q 36 47 44 50 Q 52 52 52 56" stroke-width="1.6"/>
-        <path d="M 22 50 Q 32 53 42 56 Q 50 58 50 62" stroke-width="1.6"/>
-      </g>
-    </svg>
-
-    <!-- pose: left (mirror of right) -->
-    <svg v-else viewBox="0 0 56 70" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <g class="body" style="transform: scaleX(-1); transform-origin: 28px 50%;">
-        <circle cx="22" cy="32" r="14" stroke-width="1.6"/>
-        <path class="ear" d="M 11 23 L  8 13 L 17 18 Z" stroke-width="1.6"/>
-        <path class="ear" d="M 33 23 L 36 13 L 27 18 Z" stroke-width="1.6"/>
-        <path d="M 12 20 L 11 15 L 15 17" stroke-width="0.8" opacity="0.45"/>
-        <path d="M 32 20 L 33 15 L 29 17" stroke-width="0.8" opacity="0.45"/>
-        <ellipse class="eye" cx="16" cy="31" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <ellipse class="eye" cx="28" cy="31" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <path class="eye-closed" d="M 14 31 Q 16 33 18 31" stroke-width="1" fill="none"/>
-        <path class="eye-closed" d="M 26 31 Q 28 33 30 31" stroke-width="1" fill="none"/>
-        <path d="M 21 36 L 23 36 L 22 37.4 Z" fill="currentColor" stroke="none"/>
-        <path d="M 22 37.4 Q 19.5 38.6 18.8 37.6 M 22 37.4 Q 24.5 38.6 25.2 37.6" stroke-width="0.8"/>
-        <line x1="12" y1="34.5" x2="4"  y2="32.5" stroke-width="0.5"/>
-        <line x1="12" y1="36"   x2="4"  y2="36"   stroke-width="0.5"/>
-        <path d="M 28 46 Q 36 47 44 50 Q 52 52 52 56" stroke-width="1.6"/>
-        <path d="M 22 50 Q 32 53 42 56 Q 50 58 50 62" stroke-width="1.6"/>
+    <!-- cling poses (bottom / left / right): single svg, rotated for sides -->
+    <svg v-else
+         :viewBox="companionPose === 'bottom' ? '0 0 88 50' : '0 0 50 88'"
+         stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <g :transform="poseRotation">
+        <g class="body">
+          <!-- two paws hooked over the edge -->
+          <path d="M 22 50 L 22 36 Q 22 32 26 32 Q 30 32 30 38 L 30 44" stroke-width="1.6"/>
+          <path d="M 66 50 L 66 36 Q 66 32 62 32 Q 58 32 58 38 L 58 44" stroke-width="1.6"/>
+          <!-- head, peeking up between the paws -->
+          <circle cx="44" cy="22" r="14" stroke-width="1.6"/>
+          <path class="ear" d="M 33 13 L 30 3 L 39 8 Z" stroke-width="1.6"/>
+          <path class="ear" d="M 55 13 L 58 3 L 49 8 Z" stroke-width="1.6"/>
+          <path d="M 34 10 L 33 5 L 37 8" stroke-width="0.8" opacity="0.45"/>
+          <path d="M 54 10 L 55 5 L 51 8" stroke-width="0.8" opacity="0.45"/>
+          <ellipse class="eye" cx="38" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
+          <ellipse class="eye" cx="50" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
+          <path class="eye-closed" d="M 36 20 Q 38 22 40 20" stroke-width="1" fill="none"/>
+          <path class="eye-closed" d="M 48 20 Q 50 22 52 20" stroke-width="1" fill="none"/>
+          <path d="M 43 26 L 45 26 L 44 27.4 Z" fill="currentColor" stroke="none"/>
+          <path d="M 44 27.4 Q 41.5 28.6 40.8 27.6 M 44 27.4 Q 46.5 28.6 47.2 27.6" stroke-width="0.8"/>
+          <line x1="34" y1="24.5" x2="26" y2="22.5" stroke-width="0.5"/>
+          <line x1="34" y1="26"   x2="26" y2="26"   stroke-width="0.5"/>
+          <line x1="54" y1="24.5" x2="62" y2="22.5" stroke-width="0.5"/>
+          <line x1="54" y1="26"   x2="62" y2="26"   stroke-width="0.5"/>
+        </g>
       </g>
     </svg>
   </div>
@@ -1306,6 +1262,15 @@ createApp({
       if (p === "left")   return { left:  "0px", top: companion.y + "px" };
       if (p === "bottom") return { bottom: "0px", left: companion.x + "px" };
       return {};
+    });
+
+    // for left/right cling poses, rotate the bottom-pose content 90° in svg space.
+    // bottom-pose content is in viewBox 0..88 x 0..50; left/right viewBox is 50x88.
+    // (transformations on point are applied right-to-left by SVG.)
+    const poseRotation = computed(() => {
+      if (companionPose.value === "left")  return "translate(50 0) rotate(90)";
+      if (companionPose.value === "right") return "translate(0 88) rotate(-90)";
+      return "";
     });
 
     function onCompanionDown(e) {
@@ -2028,7 +1993,7 @@ createApp({
       flashKey, alerting, alertLabel, alertNext,
       dragIdx, dragOverIdx, stats,
       music, musicStatus, musicCtrl, npInner, marqueeStyle, startMarquee, stopMarquee,
-      companion, companionPose, companionStyle, companionMood, companionDragging,
+      companion, companionPose, companionStyle, poseRotation, companionMood, companionDragging,
       onCompanionDown, onCompanionMove, onCompanionUp, resetCompanionPosition,
       phaseLabel, progressFrac, minutes, seconds, etaText,
       totalProgress, totalRemainingLabel,
