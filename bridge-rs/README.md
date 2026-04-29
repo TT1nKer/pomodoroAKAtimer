@@ -19,7 +19,6 @@ precompiled binaries for each release: <https://github.com/TT1nKer/pomodoroAKAti
 |----------|-------|
 | linux x86_64 | `timer-bridge-linux-x86_64` |
 | macos apple silicon | `timer-bridge-macos-aarch64` |
-| macos intel | `timer-bridge-macos-x86_64` |
 | windows x86_64 | `timer-bridge-windows-x86_64.exe` |
 
 ci matrix builds them on tag push (see `.github/workflows/release.yml`).

@@ -1,6 +1,6 @@
 [package]
 name = "timer-bridge"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "cross-platform media bridge for the timer ui"
 license = "MIT"

@@ -27,10 +27,10 @@ jobs:
             target: aarch64-apple-darwin
             name: timer-bridge-macos-aarch64
             ext: ''
-          - os: macos-13
-            target: x86_64-apple-darwin
-            name: timer-bridge-macos-x86_64
-            ext: ''
+          # macos x86_64 dropped — github's intel mac runners (macos-13)
+          # are heavily oversubscribed, jobs sit queued for hours.
+          # apple stopped selling intel macs in 2023; aarch64 covers ~95%
+          # of current users. add back if there's demand.
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             name: timer-bridge-windows-x86_64.exe
