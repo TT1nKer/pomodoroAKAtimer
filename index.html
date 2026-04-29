@@ -56,6 +56,29 @@ body {
 .topbar a:hover { color: var(--text); }
 .topbar .right { display: flex; gap: 2rem; }
 
+.feedback-wrap { position: relative; }
+.feedback-menu {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 0.7rem 1rem;
+  white-space: nowrap;
+  z-index: 10;
+}
+.feedback-menu a {
+  font-size: 1rem;
+  letter-spacing: 0.28em;
+  color: var(--muted);
+  text-transform: lowercase;
+  text-decoration: none;
+}
+.feedback-menu a:hover { color: var(--text); }
+
 .idle .topbar, .idle .controls, .idle .session-strip, .idle .total-bar, .idle .np { opacity: 0; pointer-events: none; }
 
 .np {
@@ -662,6 +685,13 @@ body {
       <a @click="openTab('stats')">stats</a>
       <a @click="toggleFullscreen">fullscreen</a>
       <a @click="openTab('settings')">settings</a>
+      <div class="feedback-wrap">
+        <a @click.stop="feedbackOpen = !feedbackOpen">feedback</a>
+        <div v-if="feedbackOpen" class="feedback-menu" @click.stop>
+          <a href="https://github.com/TT1nKer/pomodoroAKAtimer/issues/new" target="_blank" rel="noopener">open an issue</a>
+          <a href="mailto:hostsjim22@gmail.com?subject=timer%20feedback">email me</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1030,6 +1060,7 @@ createApp({
     const state = reactive(loadState());
     const idle = ref(false);
     const showModal = ref(false);
+    const feedbackOpen = ref(false);
     const tab = ref("session");
     const draft = reactive({});
 
@@ -1664,6 +1695,7 @@ createApp({
       updateFavicon();
       window.addEventListener("keydown", onKey);
       window.addEventListener("mousemove", bumpIdle, { passive: true });
+      window.addEventListener("click", () => { feedbackOpen.value = false; });
       window.addEventListener("touchstart", bumpIdle, { passive: true });
       bumpIdle();
       if (state.notify) ensureNotifPerm();
@@ -1693,7 +1725,7 @@ createApp({
     watch(() => state.ambientVolume, (v) => setAmbientGain(v));
 
     return {
-      state, idle, showModal, tab, draft,
+      state, idle, showModal, feedbackOpen, tab, draft,
       editing, editValue, editEl,
       flashKey, alerting, alertLabel, alertNext,
       dragIdx, dragOverIdx, stats,
