@@ -32,8 +32,8 @@ then in the timer settings: enable music bridge, url `http://localhost:7777`.
 |---|---|---|
 | install | python + playerctl | one binary |
 | platforms | linux only | linux now, macos/windows stubs |
-| size | ~3 kb script | ~2 mb stripped binary |
-| dependencies at runtime | python interpreter, playerctl cli | none |
+| size | ~3 kb script | ~680 kb stripped release binary |
+| dependencies at runtime | python interpreter, playerctl cli | libdbus (already on every linux desktop) |
 
 the python script stays the canonical "scratch your own itch on linux"
 form. the rust binary is the path toward distributing precompiled
