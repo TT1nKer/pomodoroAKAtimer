@@ -56,7 +56,73 @@ body {
 .topbar a:hover { color: var(--text); }
 .topbar .right { display: flex; gap: 2rem; }
 
-.idle .topbar, .idle .controls, .idle .session-strip, .idle .total-bar { opacity: 0; pointer-events: none; }
+.idle .topbar, .idle .controls, .idle .session-strip, .idle .total-bar, .idle .np { opacity: 0; pointer-events: none; }
+
+.np {
+  position: fixed;
+  bottom: 2.6rem;
+  left: 3rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--muted);
+  max-width: 30vw;
+  transition: opacity 0.5s ease, color 0.2s;
+}
+.np .art {
+  width: 36px; height: 36px;
+  background: var(--dim);
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  display: block;
+}
+.np .art-placeholder {
+  width: 36px; height: 36px;
+  background: var(--dim);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.np:hover { color: var(--text); }
+.np .glyph {
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 0.2s;
+  width: 0.9rem;
+  text-align: center;
+}
+.np:hover .glyph { color: var(--muted); }
+.np .glyph:hover { color: var(--text); }
+.np .text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.np .text .sep { color: var(--dim); margin: 0 0.5em; }
+.np .ctrl {
+  display: flex;
+  gap: 0.7rem;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.np:hover .ctrl { opacity: 1; }
+.np .ctrl button {
+  appearance: none; background: transparent; border: 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.np .ctrl button:hover { color: var(--text); }
 
 .center {
   grid-row: 2;
@@ -598,6 +664,20 @@ body {
     <button class="btn" @click="skip">next</button>
   </div>
 
+  <div class="np" v-if="state.musicEnabled && music && (music.title || music.artist)">
+    <img v-if="music.art" :src="music.art" class="art" referrerpolicy="no-referrer"
+         @error="$event.target.style.display='none'">
+    <div v-else class="art-placeholder"></div>
+    <span class="glyph" @click="musicCtrl('play-pause')" :title="music.status">{{ music.status === 'playing' ? '‖' : '▸' }}</span>
+    <span class="text">
+      <template v-if="music.artist">{{ music.artist }}<span class="sep">·</span></template>{{ music.title }}
+    </span>
+    <span class="ctrl">
+      <button @click="musicCtrl('previous')" title="previous">‹‹</button>
+      <button @click="musicCtrl('next')" title="next">››</button>
+    </span>
+  </div>
+
   <div class="flash" v-if="flashKey" :key="flashKey"></div>
 
   <div class="alert-modal" v-if="alerting" @click="dismissAlert">
@@ -672,6 +752,22 @@ body {
         <div class="field"><label>keep screen awake</label><label class="switch"><input type="checkbox" v-model="draft.wakeLock"><span class="slider"></span></label></div>
         <div class="field"><label>show session total bar</label><label class="switch"><input type="checkbox" v-model="draft.showTotalBar"><span class="slider"></span></label></div>
         <div class="field"><label>dynamic favicon</label><label class="switch"><input type="checkbox" v-model="draft.dynamicFavicon"><span class="slider"></span></label></div>
+
+        <div class="section-h" style="margin-top: 1.6rem;">music bridge</div>
+        <div class="field"><label>enable</label><label class="switch"><input type="checkbox" v-model="draft.musicEnabled"><span class="slider"></span></label></div>
+        <div class="field">
+          <label>bridge url</label>
+          <input type="text" v-model="draft.musicBridgeUrl"
+                 spellcheck="false"
+                 style="background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);font:inherit;font-size:0.85rem;text-align:right;padding:0.25rem 0;width:14rem;"
+                 @focus="$event.target.style.borderBottomColor='var(--text)'"
+                 @blur="$event.target.style.borderBottomColor='var(--line)'">
+        </div>
+        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+          run <span style="color:var(--muted);">python bridge.py</span> in this folder.<br>
+          requires <span style="color:var(--muted);">playerctl</span>. reads any mpris-aware player<br>
+          (spotify desktop, netease cloud, mpd, browser players).
+        </div>
       </template>
 
       <template v-if="tab === 'stats'">
@@ -782,6 +878,8 @@ function defaultState() {
     wakeLock: true,
     showTotalBar: false,
     dynamicFavicon: true,
+    musicEnabled: false,
+    musicBridgeUrl: "http://localhost:7777",
   };
 }
 function loadState() {
@@ -806,6 +904,8 @@ function loadState() {
       wakeLock: p.wakeLock !== false,
       showTotalBar: !!p.showTotalBar,
       dynamicFavicon: p.dynamicFavicon !== false,
+      musicEnabled: !!p.musicEnabled,
+      musicBridgeUrl: typeof p.musicBridgeUrl === "string" && p.musicBridgeUrl ? p.musicBridgeUrl : "http://localhost:7777",
     };
   } catch { return defaultState(); }
 }
@@ -850,6 +950,38 @@ createApp({
 
     const statsLog = ref(loadStatsLog());
     const nowTick = ref(Date.now());
+
+    const music = ref(null);
+    let musicTimer = null;
+    async function pollMusic() {
+      if (!state.musicEnabled || !state.musicBridgeUrl) return;
+      try {
+        const r = await fetch(state.musicBridgeUrl + "/now", { cache: "no-store" });
+        if (!r.ok) throw 0;
+        const d = await r.json();
+        music.value = (d && (d.title || d.artist)) ? d : null;
+      } catch {
+        music.value = null;
+      }
+    }
+    function startMusicPoll() {
+      stopMusicPoll();
+      pollMusic();
+      musicTimer = setInterval(pollMusic, 3000);
+    }
+    function stopMusicPoll() {
+      if (musicTimer) clearInterval(musicTimer);
+      musicTimer = null;
+    }
+    async function musicCtrl(action) {
+      try {
+        const r = await fetch(state.musicBridgeUrl + "/" + action, { method: "POST" });
+        if (r.ok) {
+          const d = await r.json();
+          music.value = (d && (d.title || d.artist)) ? d : null;
+        }
+      } catch {}
+    }
 
     const currentPhase = computed(() => state.session[state.idx] || { type: "focus", min: 25 });
     const phaseLabel = computed(() => LABELS[currentPhase.value.type]);
@@ -1234,6 +1366,8 @@ createApp({
         wakeLock: state.wakeLock,
         showTotalBar: state.showTotalBar,
         dynamicFavicon: state.dynamicFavicon,
+        musicEnabled: state.musicEnabled,
+        musicBridgeUrl: state.musicBridgeUrl,
       })));
       showModal.value = true;
     }
@@ -1252,6 +1386,8 @@ createApp({
         state.wakeLock = !!draft.wakeLock;
         state.showTotalBar = !!draft.showTotalBar;
         state.dynamicFavicon = !!draft.dynamicFavicon;
+        state.musicEnabled = !!draft.musicEnabled;
+        state.musicBridgeUrl = (draft.musicBridgeUrl || "").trim().replace(/\/+$/, "") || "http://localhost:7777";
         if (state.notify) ensureNotifPerm();
         if (sessionChanged) {
           state.idx = Math.min(state.idx, state.session.length - 1);
@@ -1345,6 +1481,7 @@ createApp({
       bumpIdle();
       if (state.notify) ensureNotifPerm();
       nowTimer = setInterval(() => { nowTick.value = Date.now(); }, 1000);
+      if (state.musicEnabled) startMusicPoll();
     });
     onUnmounted(() => {
       window.removeEventListener("keydown", onKey);
@@ -1352,7 +1489,13 @@ createApp({
       window.removeEventListener("touchstart", bumpIdle);
       if (rafId) cancelAnimationFrame(rafId);
       if (nowTimer) clearInterval(nowTimer);
+      stopMusicPoll();
       releaseWakeLock();
+    });
+
+    watch(() => [state.musicEnabled, state.musicBridgeUrl], () => {
+      if (state.musicEnabled) startMusicPoll();
+      else { stopMusicPoll(); music.value = null; }
     });
 
     return {
@@ -1360,6 +1503,7 @@ createApp({
       editing, editValue, editEl,
       flashKey, alerting, alertLabel, alertNext,
       dragIdx, dragOverIdx, stats,
+      music, musicCtrl,
       phaseLabel, progressFrac, minutes, seconds, etaText,
       totalProgress, totalRemainingLabel,
       labelOf, totalMinutes, formatMinutes,
