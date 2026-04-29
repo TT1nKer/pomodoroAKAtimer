@@ -66,62 +66,58 @@ body {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  width: clamp(20rem, 28vw, 30rem);
   font-size: 0.82rem;
   letter-spacing: 0.18em;
   text-transform: lowercase;
   color: var(--muted);
-  max-width: 30vw;
   transition: opacity 0.5s ease, color 0.2s;
 }
-.np .art {
+.np:hover { color: var(--text); }
+.np .art, .np .art-placeholder {
   width: 36px; height: 36px;
   background: var(--dim);
+  border: 1px solid var(--line);
   flex-shrink: 0;
   object-fit: cover;
-  border: 1px solid var(--line);
   display: block;
 }
-.np .art-placeholder {
-  width: 36px; height: 36px;
-  background: var(--dim);
-  border: 1px solid var(--line);
-  flex-shrink: 0;
-}
-.np:hover { color: var(--text); }
-.np .glyph {
-  font-size: 0.9rem;
-  letter-spacing: 0;
-  color: var(--dim);
-  cursor: pointer;
-  transition: color 0.2s;
-  width: 0.9rem;
-  text-align: center;
-}
-.np:hover .glyph { color: var(--muted); }
-.np .glyph:hover { color: var(--text); }
 .np .text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent 100%);
+}
+.np .text .inner {
+  display: inline-block;
+  transition: transform 0.4s ease-out;
 }
 .np .text .sep { color: var(--dim); margin: 0 0.5em; }
+@keyframes np-marquee {
+  0%, 10% { transform: translateX(0); }
+  46%, 54% { transform: translateX(var(--np-scroll, 0)); }
+  90%, 100% { transform: translateX(0); }
+}
 .np .ctrl {
   display: flex;
   gap: 0.7rem;
-  opacity: 0;
-  transition: opacity 0.25s;
+  flex-shrink: 0;
 }
-.np:hover .ctrl { opacity: 1; }
 .np .ctrl button {
   appearance: none; background: transparent; border: 0;
-  color: var(--muted);
+  color: var(--dim);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   letter-spacing: 0;
   cursor: pointer;
   padding: 0;
+  width: 1.4rem;
+  text-align: center;
+  transition: color 0.2s;
 }
+.np:hover .ctrl button { color: var(--muted); }
 .np .ctrl button:hover { color: var(--text); }
 
 .center {
@@ -383,6 +379,31 @@ body {
   align-items: baseline;
 }
 .section-h:first-child { margin-top: 0; }
+
+.bridge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: 0.62rem;
+  letter-spacing: 0.32em;
+  text-transform: lowercase;
+  color: var(--dim);
+}
+.bridge-status .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: background 0.25s;
+}
+.bridge-status.connected { color: var(--muted); }
+.bridge-status.connected .dot {
+  background: #6dd47e;
+  box-shadow: 0 0 6px rgba(109, 212, 126, 0.4);
+}
+.bridge-status.disconnected { color: var(--muted); }
+.bridge-status.disconnected .dot {
+  background: #d97777;
+}
 
 .field {
   display: flex; align-items: center; justify-content: space-between;
@@ -664,16 +685,21 @@ body {
     <button class="btn" @click="skip">next</button>
   </div>
 
-  <div class="np" v-if="state.musicEnabled && music && (music.title || music.artist)">
+  <div class="np"
+       v-if="state.musicEnabled && music && (music.title || music.artist)"
+       @mouseenter="startMarquee"
+       @mouseleave="stopMarquee">
     <img v-if="music.art" :src="music.art" class="art" referrerpolicy="no-referrer"
          @error="$event.target.style.display='none'">
     <div v-else class="art-placeholder"></div>
-    <span class="glyph" @click="musicCtrl('play-pause')" :title="music.status">{{ music.status === 'playing' ? '‖' : '▸' }}</span>
     <span class="text">
-      <template v-if="music.artist">{{ music.artist }}<span class="sep">·</span></template>{{ music.title }}
+      <span class="inner" ref="npInner" :style="marqueeStyle">
+        <template v-if="music.artist">{{ music.artist }}<span class="sep">·</span></template>{{ music.title }}
+      </span>
     </span>
     <span class="ctrl">
       <button @click="musicCtrl('previous')" title="previous">‹‹</button>
+      <button @click="musicCtrl('play-pause')" :title="music.status">{{ music.status === 'playing' ? '‖' : '▸' }}</button>
       <button @click="musicCtrl('next')" title="next">››</button>
     </span>
   </div>
@@ -753,7 +779,12 @@ body {
         <div class="field"><label>show session total bar</label><label class="switch"><input type="checkbox" v-model="draft.showTotalBar"><span class="slider"></span></label></div>
         <div class="field"><label>dynamic favicon</label><label class="switch"><input type="checkbox" v-model="draft.dynamicFavicon"><span class="slider"></span></label></div>
 
-        <div class="section-h" style="margin-top: 1.6rem;">music bridge</div>
+        <div class="section-h" style="margin-top: 1.6rem;">
+          <span>music bridge</span>
+          <span class="bridge-status" :class="musicStatus">
+            <span class="dot"></span>{{ musicStatus === 'connected' ? 'connected' : musicStatus === 'disconnected' ? 'unreachable' : 'off' }}
+          </span>
+        </div>
         <div class="field"><label>enable</label><label class="switch"><input type="checkbox" v-model="draft.musicEnabled"><span class="slider"></span></label></div>
         <div class="field">
           <label>bridge url</label>
@@ -764,9 +795,20 @@ body {
                  @blur="$event.target.style.borderBottomColor='var(--line)'">
         </div>
         <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
-          run <span style="color:var(--muted);">python bridge.py</span> in this folder.<br>
-          requires <span style="color:var(--muted);">playerctl</span>. reads any mpris-aware player<br>
-          (spotify desktop, netease cloud, mpd, browser players).
+          <template v-if="musicStatus === 'disconnected'">
+            <span style="color:#d97777;">cannot reach bridge.</span> start it with:<br>
+            <span style="color:var(--muted);">python bridge.py</span> (in the timer folder)<br>
+            needs <span style="color:var(--muted);">playerctl</span> · linux only · works with any mpris-aware player.
+          </template>
+          <template v-else-if="musicStatus === 'connected'">
+            reading from mpris. supports spotify desktop, netease cloud,<br>
+            mpd, browser players, and anything else publishing mpris.
+          </template>
+          <template v-else>
+            optional linux daemon that exposes your music player to the timer.<br>
+            run <span style="color:var(--muted);">python bridge.py</span> in this folder, then enable above.<br>
+            requires <span style="color:var(--muted);">playerctl</span>.
+          </template>
         </div>
       </template>
 
@@ -888,7 +930,8 @@ function loadState() {
     if (!raw) return defaultState();
     const p = JSON.parse(raw);
     const base = defaultState();
-    const session = Array.isArray(p.session) && p.session.length ? p.session : base.session;
+    const session = (Array.isArray(p.session) && p.session.length ? p.session : base.session)
+      .map(x => ({ type: x.type, min: Math.max(1, Math.round(Number(x.min) || 25)) }));
     const idx = Math.min(Math.max(0, p.idx | 0), session.length - 1);
     const totalMs = session[idx].min * 60 * 1000;
     return {
@@ -952,16 +995,34 @@ createApp({
     const nowTick = ref(Date.now());
 
     const music = ref(null);
+    const musicStatus = ref("off");  // "off" | "connected" | "disconnected"
+    const npInner = ref(null);
+    const marqueeStyle = ref({});
+    function startMarquee() {
+      const inner = npInner.value;
+      if (!inner) return;
+      const overflow = inner.scrollWidth - inner.parentElement.clientWidth;
+      if (overflow <= 8) { marqueeStyle.value = {}; return; }
+      const dur = Math.max(5, overflow / 35 + 2);
+      marqueeStyle.value = {
+        "--np-scroll": `-${overflow + 6}px`,
+        animation: `np-marquee ${dur}s linear infinite`,
+      };
+    }
+    function stopMarquee() { marqueeStyle.value = {}; }
+
     let musicTimer = null;
     async function pollMusic() {
-      if (!state.musicEnabled || !state.musicBridgeUrl) return;
+      if (!state.musicEnabled || !state.musicBridgeUrl) { musicStatus.value = "off"; return; }
       try {
         const r = await fetch(state.musicBridgeUrl + "/now", { cache: "no-store" });
         if (!r.ok) throw 0;
         const d = await r.json();
         music.value = (d && (d.title || d.artist)) ? d : null;
+        musicStatus.value = "connected";
       } catch {
         music.value = null;
+        musicStatus.value = "disconnected";
       }
     }
     function startMusicPoll() {
@@ -972,6 +1033,7 @@ createApp({
     function stopMusicPoll() {
       if (musicTimer) clearInterval(musicTimer);
       musicTimer = null;
+      musicStatus.value = "off";
     }
     async function musicCtrl(action) {
       try {
@@ -1181,7 +1243,6 @@ createApp({
       if (ms !== null && ms >= 1000 && ms <= 240 * 60 * 1000) {
         state.totalMs = ms;
         state.remainingMs = ms;
-        state.session[state.idx].min = +(ms / 60000).toFixed(2);
         save();
       }
       editing.value = false;
@@ -1194,7 +1255,6 @@ createApp({
       const next = Math.max(60_000, Math.min(240 * 60_000, state.totalMs + delta));
       state.totalMs = next;
       state.remainingMs = next;
-      state.session[state.idx].min = next / 60000;
       save();
     }
 
@@ -1374,7 +1434,7 @@ createApp({
     function closeModal(commit) {
       if (commit) {
         const cleaned = (draft.session || []).filter(p => Number(p.min) > 0 && ["focus","short","long"].includes(p.type))
-          .map(p => ({ type: p.type, min: Math.min(240, Math.max(0.1, Number(p.min) || 0)) }));
+          .map(p => ({ type: p.type, min: Math.min(240, Math.max(1, Math.round(Number(p.min) || 0))) }));
         if (cleaned.length === 0) cleaned.push({ type: "focus", min: 25 });
         const sessionChanged = JSON.stringify(cleaned) !== JSON.stringify(state.session);
         state.session = cleaned;
@@ -1456,7 +1516,6 @@ createApp({
             const step = e.shiftKey ? 5 * 60_000 : 60_000;
             const next = Math.min(240 * 60_000, state.totalMs + step);
             state.totalMs = next; state.remainingMs = next;
-            state.session[state.idx].min = next / 60000;
             save(); e.preventDefault();
           } break;
         case "ArrowDown":
@@ -1464,7 +1523,6 @@ createApp({
             const step = e.shiftKey ? 5 * 60_000 : 60_000;
             const next = Math.max(60_000, state.totalMs - step);
             state.totalMs = next; state.remainingMs = next;
-            state.session[state.idx].min = next / 60000;
             save(); e.preventDefault();
           } break;
       }
@@ -1503,7 +1561,7 @@ createApp({
       editing, editValue, editEl,
       flashKey, alerting, alertLabel, alertNext,
       dragIdx, dragOverIdx, stats,
-      music, musicCtrl,
+      music, musicStatus, musicCtrl, npInner, marqueeStyle, startMarquee, stopMarquee,
       phaseLabel, progressFrac, minutes, seconds, etaText,
       totalProgress, totalRemainingLabel,
       labelOf, totalMinutes, formatMinutes,
