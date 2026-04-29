@@ -1,6 +1,6 @@
 [package]
 name = "timer-bridge"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "cross-platform media bridge for the timer ui"
 license = "MIT"
@@ -13,15 +13,11 @@ serde_json = "1"
 [target.'cfg(target_os = "linux")'.dependencies]
 mpris = "2.0"
 
-# macos / windows backends are stubs for now; deps are listed but commented
-# until those backends are actually implemented.
-#
-# [target.'cfg(target_os = "macos")'.dependencies]
-# objc = "0.2"
-# core-foundation = "0.10"
-#
-# [target.'cfg(target_os = "windows")'.dependencies]
-# windows = { version = "0.58", features = ["Media_Control", "Foundation"] }
+# macos: shells out to `nowplaying-cli` (brew install nowplaying-cli).
+# no rust deps needed — Command + str parsing is enough.
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = ["Media_Control", "Foundation"] }
 
 [profile.release]
 strip = true

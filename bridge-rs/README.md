@@ -5,18 +5,26 @@ script — same endpoints, same json shape — so the timer ui needs no change.
 
 ## status
 
-| platform | backend | works |
-|----------|---------|-------|
-| linux    | mpris (d-bus) | yes — covers spotify desktop, netease cloud, mpd, browser players |
-| macos    | mediaremote   | stub — returns `status: stopped` |
-| windows  | smtc          | stub — returns `status: stopped` |
+| platform | backend | how |
+|----------|---------|-----|
+| linux    | mpris (d-bus) | `mpris` crate, libdbus dynamic link. covers spotify desktop, netease cloud, mpd, browser players. ~680 kb. |
+| macos    | mediaremote (via [nowplaying-cli](https://github.com/kirtan-shah/nowplaying-cli)) | shells out — mediaremote is a private apple framework, the cli already does the objc binding. install: `brew install nowplaying-cli` |
+| windows  | smtc | `windows` crate, `Media_Control` feature. uses `GlobalSystemMediaTransportControlsSessionManager` — covers spotify, groove, edge / chrome / firefox players. |
 
-the macos and windows backends compile but always report stopped. they
-exist so contributors can fill them in without touching the http server
-or the timer ui. see `src/backend/macos.rs` and `windows.rs` for the
-crate refs and api sketches.
+## download
 
-## build
+precompiled binaries for each release: <https://github.com/TT1nKer/pomodoroAKAtimer/releases>
+
+| platform | asset |
+|----------|-------|
+| linux x86_64 | `timer-bridge-linux-x86_64` |
+| macos apple silicon | `timer-bridge-macos-aarch64` |
+| macos intel | `timer-bridge-macos-x86_64` |
+| windows x86_64 | `timer-bridge-windows-x86_64.exe` |
+
+ci matrix builds them on tag push (see `.github/workflows/release.yml`).
+
+## build from source
 
 ```sh
 # install rust if you don't have it: https://rustup.rs
@@ -26,18 +34,20 @@ cargo build --release
 
 then in the timer settings: enable music bridge, url `http://localhost:7777`.
 
+linux build needs `libdbus-1-dev` + `pkg-config` at compile time
+(runtime needs only `libdbus-1.so.3`, present on every desktop linux).
+
 ## why rewrite the python one
 
-| | python | rust |
-|---|---|---|
-| install | python + playerctl | one binary |
-| platforms | linux only | linux now, macos/windows stubs |
-| size | ~3 kb script | ~680 kb stripped release binary |
-| dependencies at runtime | python interpreter, playerctl cli | libdbus (already on every linux desktop) |
+|                          | python              | rust                                   |
+|--------------------------|---------------------|----------------------------------------|
+| install                  | python + playerctl  | one binary                             |
+| platforms                | linux only          | linux + macos + windows                |
+| size                     | ~3 kb script        | ~680 kb stripped release binary        |
+| runtime deps             | python, playerctl   | libdbus (linux), nowplaying-cli (mac), winrt (windows, builtin) |
 
 the python script stays the canonical "scratch your own itch on linux"
-form. the rust binary is the path toward distributing precompiled
-binaries on the github releases page (and eventually a proper installer).
+form. the rust binary is what gets distributed via github releases.
 
 ## endpoints
 
@@ -54,8 +64,9 @@ CORS is open (`Access-Control-Allow-Origin: *`) and the server binds to
 ## adding a backend
 
 1. write `src/backend/<os>.rs` with a struct implementing `Backend`
-2. uncomment the matching block in `Cargo.toml`
+2. add the matching `[target.'cfg(target_os = "<os>")'.dependencies]` block in `Cargo.toml`
 3. wire it in `src/backend/mod.rs::default_backend()`
+4. add a job to `.github/workflows/release.yml`
 
 `Backend` only requires `now()`; control methods default to no-ops, so a
 read-only backend is fine for a first pass.

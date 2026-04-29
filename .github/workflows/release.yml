@@ -1,0 +1,84 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: bridge-rs
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: timer-bridge-linux-x86_64
+            ext: ''
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: timer-bridge-macos-aarch64
+            ext: ''
+          - os: macos-13
+            target: x86_64-apple-darwin
+            name: timer-bridge-macos-x86_64
+            ext: ''
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: timer-bridge-windows-x86_64.exe
+            ext: '.exe'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: bridge-rs
+
+      - name: install linux deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+
+      - name: build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: stage binary
+        shell: bash
+        run: cp "target/${{ matrix.target }}/release/timer-bridge${{ matrix.ext }}" "${{ matrix.name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: bridge-rs/${{ matrix.name }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: list artifacts
+        run: ls -la dist/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

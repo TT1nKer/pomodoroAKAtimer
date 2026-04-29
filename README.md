@@ -5,7 +5,8 @@ a minimalist pomodoro timer. single-file html, vue 3 bundled, runs offline.
 ```
 index.html         # the entire app — open it in a browser
 vue.global.prod.js # vue runtime (offline)
-bridge.py          # optional, linux-only: exposes the desktop music player
+bridge.py          # optional linux-only python daemon for music integration
+bridge-rs/         # optional cross-platform rust daemon (linux/macos/windows)
 ```
 
 live: <https://tt1nker.github.io/pomodoroAKAtimer/>
@@ -29,29 +30,32 @@ press `f` for fullscreen.
 - dynamic progress favicon, "ends at hh:mm" eta
 - fully offline — no network calls, no telemetry, no accounts
 
-## music bridge (optional, linux only)
+## music bridge (optional)
 
 the timer can show what's playing on your desktop music player and let you
 skip / pause from the timer ui. this requires a tiny local daemon because
-browsers can't read mpris over d-bus directly.
+browsers can't read mpris / mediaremote / smtc directly.
 
-**setup:**
+**recommended — precompiled binary** (linux / macos / windows):
+download the matching binary from
+[github releases](https://github.com/TT1nKer/pomodoroAKAtimer/releases),
+chmod +x it, run. then in the timer: settings → music bridge → enable.
+
+**alternative — python script** (linux only):
 ```sh
 sudo pacman -S playerctl     # arch — adjust for your distro
 python bridge.py             # in this folder; ctrl-c to stop
 ```
 
-then in the timer: settings → music bridge → enable.
+**alternative — build from source**: see [bridge-rs/README.md](bridge-rs/README.md).
 
-works with anything that publishes mpris: spotify desktop, netease cloud,
-mpd / mopidy, browser players (firefox, chrome), and others.
+works with anything that publishes mpris (linux), mediaremote (macos via
+[nowplaying-cli](https://github.com/kirtan-shah/nowplaying-cli)), or smtc
+(windows): spotify desktop, apple music, netease cloud, mpd, browser
+players, etc.
 
 **status indicator** in settings tells you whether the timer can reach the
 daemon. if it goes red, the daemon isn't running.
-
-**not on linux?** the music feature is opt-in and the timer works fine
-without it. equivalent bridges for macos (mediaremote) and windows (smtc)
-are out of scope for the python script — prs welcome.
 
 ## stats persistence
 
