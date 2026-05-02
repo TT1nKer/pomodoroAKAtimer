@@ -1531,17 +1531,26 @@ createApp({
     }
     function jumpTo(i) { pause(); loadPhase(i); }
 
-    let rafId = null;
+    // tick at ~5Hz (200ms). the displayed unit is seconds, so 60Hz raf was
+    // wasting 12x the cpu — re-running computed chains and re-encoding the
+    // favicon svg every frame. setInterval at 200ms keeps the display feeling
+    // live and detects phase end within 200ms of true zero.
+    let tickId = null;
     let lastTick = 0;
     function tick() {
-      if (!state.running) return;
+      if (!state.running) {
+        if (tickId) clearInterval(tickId);
+        tickId = null;
+        return;
+      }
       const now = performance.now();
       state.remainingMs -= now - lastTick;
       lastTick = now;
       if (state.remainingMs <= 0) {
         state.remainingMs = 0;
         state.running = false;
-        rafId = null;
+        if (tickId) clearInterval(tickId);
+        tickId = null;
         if (currentPhase.value.type === "focus") {
           recordFocus(currentPhase.value.min);
         }
@@ -1551,9 +1560,7 @@ createApp({
         save();
         advance(true);
         releaseWakeLock();
-        return;
       }
-      rafId = requestAnimationFrame(tick);
     }
     function start() {
       if (state.running) return;
@@ -1565,14 +1572,15 @@ createApp({
       lastTick = performance.now();
       unlockAudio();
       requestWakeLock();
-      tick();
+      if (tickId) clearInterval(tickId);
+      tickId = setInterval(tick, 200);
       save();
     }
     function pause() {
       if (!state.running) return;
       state.running = false;
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
+      if (tickId) clearInterval(tickId);
+      tickId = null;
       releaseWakeLock();
       save();
     }
@@ -1893,7 +1901,10 @@ createApp({
         ? `${minutes.value}:${seconds.value}`
         : `pomodoro`;
     }
-    watch(() => [state.remainingMs, state.totalMs, state.idx, state.running], () => {
+    // title + favicon only need to refresh when the displayed seconds change
+    // (or on phase / pause toggles). watching the displayed string buckets
+    // ticks naturally — at most ~1Hz instead of every tick.
+    watch(() => [minutes.value, seconds.value, state.idx, state.running], () => {
       if (!titleFlashTimer) updateTitle();
       updateFavicon();
     }, { immediate: true });
@@ -2041,7 +2052,7 @@ createApp({
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("mousemove", bumpIdle);
       window.removeEventListener("touchstart", bumpIdle);
-      if (rafId) cancelAnimationFrame(rafId);
+      if (tickId) clearInterval(tickId);
       if (nowTimer) clearInterval(nowTimer);
       stopMusicPoll();
       stopAmbient();
