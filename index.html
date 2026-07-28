@@ -876,6 +876,15 @@ body {
   color: var(--text);
 }
 
+.topbar .right > button,
+.topbar .feedback-wrap > button {
+  min-width: 22px;
+  font-size: 14px;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+}
+
 .brand-compact {
   display: none;
 }
@@ -1447,16 +1456,28 @@ body {
 }
 
 .time-ring::after {
-  inset: 39%;
-  box-shadow: 0 0 0 12px rgba(var(--signal-rgb), .1);
+  inset: 34%;
+  box-shadow: 0 0 0 10px rgba(var(--signal-rgb), .1);
 }
 
 .running .time-ring::after {
-  box-shadow: 0 0 0 18px rgba(var(--signal-rgb), .08);
+  box-shadow: 0 0 0 14px rgba(var(--signal-rgb), .08);
+}
+
+.ring-readout strong {
+  font-size: clamp(20px, 2vw, 30px);
+}
+
+.ring-readout strong small {
+  margin-left: .1em;
+  font-size: .36em;
 }
 
 .ring-readout > span {
-  color: var(--signal);
+  margin-top: 6px;
+  color: var(--bg);
+  font-size: 9px;
+  letter-spacing: .12em;
 }
 
 .session-rail {
@@ -1498,6 +1519,7 @@ body {
 }
 
 .controls .btn {
+  font-size: 16px;
   letter-spacing: .08em;
   text-transform: none;
 }
@@ -1505,7 +1527,7 @@ body {
 @media (min-width: 901px) {
   .center { grid-template-columns: minmax(0, 1fr) minmax(280px, .72fr); }
   .controls { grid-template-columns: 1fr minmax(220px, 300px) 1fr; padding: 0 max(40px, calc((100vw - 920px) / 2)); }
-  .controls .btn { border: 0; font-size: 10px; }
+  .controls .btn { border: 0; font-size: 16px; }
   .controls .btn:first-child { border: 0; }
   .controls .btn.primary {
     min-height: 44px;
@@ -1521,7 +1543,7 @@ body {
     grid-template-columns: 1fr minmax(132px, 42vw) 1fr;
     padding-inline: 20px;
   }
-  .controls .btn { border: 0; }
+  .controls .btn { border: 0; font-size: 14px; }
   .controls .btn:first-child { border: 0; }
   .controls .btn.primary {
     min-height: 44px;
@@ -1548,12 +1570,12 @@ body {
       <span class="brand-compact">focus</span>
     </a>
     <div class="right">
-      <button type="button" @click="openTab('stats')">stats</button>
-      <button type="button" class="optional-link" @click="openTab('session')">session</button>
-      <button type="button" class="optional-link" @click="toggleFullscreen">fullscreen</button>
-      <button type="button" @click="openTab('settings')">settings</button>
+      <button type="button" @click="openTab('stats')" aria-label="Statistics" title="Statistics">∑</button>
+      <button type="button" class="optional-link" @click="openTab('session')" aria-label="Session" title="Session">≡</button>
+      <button type="button" class="optional-link" @click="toggleFullscreen" aria-label="Fullscreen" title="Fullscreen">⛶</button>
+      <button type="button" @click="openTab('settings')" aria-label="Settings" title="Settings">⚙</button>
       <div class="feedback-wrap">
-        <button type="button" @click.stop="feedbackOpen = !feedbackOpen" :aria-expanded="feedbackOpen">feedback</button>
+        <button type="button" @click.stop="feedbackOpen = !feedbackOpen" :aria-expanded="feedbackOpen" aria-label="Feedback" title="Feedback">···</button>
         <div v-if="feedbackOpen" class="feedback-menu" @click.stop>
           <a href="https://github.com/TT1nKer/pomodoroAKAtimer/issues/new" target="_blank" rel="noopener">open an issue</a>
           <a href="mailto:hostsjim22@gmail.com?subject=timer%20feedback">email me</a>
@@ -1590,10 +1612,10 @@ body {
       </div>
 
       <div class="eta" v-if="state.running || state.remainingMs < state.totalMs">
-        ends <span class="v">{{ etaText }}</span>
+        → <span class="v">{{ etaText }}</span>
       </div>
       <div class="eta" v-else style="opacity: 0.55;">
-        armed for <span class="v">{{ etaText }}</span>
+        ○ <span class="v">{{ etaText }}</span>
       </div>
     </div>
 
@@ -1602,14 +1624,14 @@ body {
         <div class="ring-scale"></div>
         <div class="ring-readout">
           <strong>{{ Math.round(progressFrac * 100) }}<small>%</small></strong>
-          <span>{{ state.running ? 'counting' : 'held' }}</span>
+          <span>{{ state.running ? '▶' : 'Ⅱ' }}</span>
         </div>
       </div>
     </div>
 
     <div class="session-rail">
       <div class="rail-label">
-        session route
+        SEQ
         <b>{{ state.idx + 1 }} / {{ state.session.length }}</b>
       </div>
       <div class="session-strip">
@@ -1633,9 +1655,9 @@ body {
   </div>
 
   <div class="controls">
-    <button class="btn" @click="reset">reset</button>
-    <button class="btn primary" @click="toggle">{{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
-    <button class="btn" @click="skip">next</button>
+    <button class="btn" @click="reset" aria-label="Reset" title="Reset">↺</button>
+    <button class="btn primary" @click="toggle" :aria-label="state.running ? 'Pause' : (progressFrac < 1 ? 'Resume' : 'Start')" :title="state.running ? 'Pause' : (progressFrac < 1 ? 'Resume' : 'Start')">{{ state.running ? 'Ⅱ' : '▶' }}</button>
+    <button class="btn" @click="skip" aria-label="Next phase" title="Next phase">→</button>
   </div>
 
   <div class="np"
