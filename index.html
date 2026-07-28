@@ -1600,6 +1600,498 @@ body {
 @media (max-width: 560px) {
   .controls { padding-inline: 0; }
 }
+
+/* Modal system: a single typographic, spacing, and status-color grammar. */
+.modal-bg {
+  padding: 21px;
+  background: rgba(3, 3, 4, .88);
+  backdrop-filter: blur(14px) saturate(.72);
+}
+
+.modal {
+  --modal-paper: #f1efe7;
+  --modal-secondary: #98989f;
+  --modal-tertiary: #5e5e65;
+  --modal-rule: rgba(241, 239, 231, .12);
+  --modal-rule-strong: rgba(241, 239, 231, .28);
+  width: min(676px, calc(100vw - 42px));
+  max-height: calc(100dvh - 42px);
+  overflow-y: auto;
+  padding: 21px 34px 26px;
+  border: 1px solid var(--modal-rule-strong);
+  background: #0d0d0f;
+  box-shadow: 0 34px 89px rgba(0, 0, 0, .58);
+  color: var(--modal-paper);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  scrollbar-color: var(--modal-rule-strong) transparent;
+}
+
+.modal-tabs {
+  height: 42px;
+  gap: 26px;
+  align-items: stretch;
+  margin: 0 0 21px;
+  padding: 0;
+  border-color: var(--modal-rule);
+}
+
+.modal-tabs button,
+.modal-tabs .x {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  color: var(--modal-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.modal-tabs button:hover,
+.modal-tabs button.active,
+.modal-tabs .x:hover { color: var(--modal-paper); }
+
+.modal-tabs button.active::after {
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 2px;
+  transform: none;
+  background: var(--signal);
+}
+
+.modal-tabs .x {
+  justify-content: flex-end;
+  margin-left: auto;
+  color: var(--modal-secondary);
+}
+
+.section-h,
+.stat .k,
+.chart-axis,
+.beta-sync .state {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.section-h {
+  margin: 26px 0 8px;
+  color: var(--modal-secondary);
+}
+
+.section-h:first-child { margin-top: 0; }
+
+.field {
+  min-height: 42px;
+  gap: 21px;
+  padding: 8px 0;
+  border-color: var(--modal-rule);
+  color: var(--modal-paper);
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.field label { color: var(--modal-secondary); }
+
+.field select,
+.field input[type="number"],
+.modal-text-input {
+  min-height: 30px;
+  max-width: 62%;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid var(--modal-rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--modal-paper);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.modal-text-input { width: 260px; }
+
+.field select:focus,
+.field input[type="number"]:focus,
+.modal-text-input:focus {
+  outline: 0;
+  border-bottom-color: var(--signal);
+}
+
+.field .num {
+  min-width: 3ch;
+  color: var(--modal-secondary);
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.field input[type="range"] {
+  height: 1px;
+  background: var(--modal-rule-strong);
+}
+
+.field input[type="range"]::-webkit-slider-thumb { background: var(--modal-paper); }
+.field input[type="range"]::-moz-range-thumb { background: var(--modal-paper); }
+
+.switch {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 18px;
+}
+
+.switch .slider {
+  border-color: var(--modal-rule-strong);
+  border-radius: 2px;
+}
+
+.switch .slider::before {
+  width: 8px;
+  height: 10px;
+  left: 4px;
+  top: 3px;
+  border-radius: 1px;
+  background: var(--modal-tertiary);
+}
+
+.switch input:checked + .slider {
+  border-color: var(--signal);
+  background: rgba(var(--signal-rgb), .08);
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(16px);
+  background: var(--signal);
+}
+
+.modal-help {
+  max-width: 62ch;
+  margin: 8px 0 0;
+  color: var(--modal-tertiary);
+  font-size: 11px;
+  letter-spacing: .02em;
+  line-height: 1.55;
+}
+
+.modal-help a,
+.modal-links a {
+  color: var(--modal-secondary) !important;
+  text-decoration: underline;
+  text-decoration-color: var(--modal-rule-strong) !important;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.bridge-status {
+  gap: 6px;
+  color: var(--modal-tertiary);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.bridge-status .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  box-shadow: none !important;
+}
+
+.phase-row {
+  min-height: 42px;
+  grid-template-columns: 21px 26px 1fr 68px 26px;
+  gap: 8px;
+  padding: 6px 0;
+  border-color: var(--modal-rule);
+  font-size: 13px;
+}
+
+.phase-row .idx,
+.phase-row select,
+.phase-row input[type="number"] {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.add-row,
+.presets button {
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.presets { gap: 8px 21px; }
+
+.stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 26px;
+}
+
+.stat {
+  min-width: 0;
+  padding: 13px;
+  border-color: var(--modal-rule);
+  background: rgba(241, 239, 231, .018);
+}
+
+.stat .k {
+  margin: 0 0 13px;
+  color: var(--modal-secondary);
+}
+
+.stat .v {
+  color: var(--modal-paper);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.stat .v .unit {
+  margin-left: 4px;
+  color: var(--modal-secondary);
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+
+.stat .sub {
+  min-height: 1.4em;
+  margin-top: 8px;
+  color: var(--modal-tertiary);
+  font-size: 10px;
+  letter-spacing: .02em;
+  line-height: 1.4;
+}
+
+.chart {
+  height: 89px;
+  margin-top: 8px;
+  border-color: var(--modal-rule);
+}
+
+.chart .bar { background: var(--modal-rule); }
+.chart .bar.has { background: var(--modal-rule-strong); }
+.chart .bar.today { background: var(--signal); }
+
+.chart-axis {
+  margin-top: 5px;
+  color: var(--modal-tertiary);
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.beta-sync {
+  min-height: 68px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 21px;
+  margin: 0 0 26px;
+  padding: 13px;
+  border: 1px solid var(--modal-rule);
+  background: linear-gradient(90deg, rgba(var(--signal-rgb), .08), transparent 38%);
+}
+
+.beta-sync .section-h { color: var(--modal-paper); }
+
+.beta-sync .identity {
+  margin-top: 4px;
+  color: var(--modal-secondary);
+  font-size: 11px;
+  letter-spacing: .02em;
+}
+
+.beta-sync .state { color: var(--signal); }
+
+.beta-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.beta-sync button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-color: var(--modal-rule-strong);
+  color: var(--modal-paper);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.beta-sync button:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: rgba(var(--signal-rgb), .08);
+}
+
+.beta-sync .error {
+  color: #db7a72;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.modal-links {
+  display: flex;
+  gap: 21px;
+  margin-top: 13px;
+}
+
+.modal-links a,
+.danger {
+  color: var(--modal-secondary);
+  font-size: 11px;
+  letter-spacing: .04em;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.danger { margin-top: 21px; }
+.danger:hover { color: #db7a72; }
+
+.modal .actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(200px, 1fr);
+  gap: 21px;
+  margin-top: 26px;
+  padding-top: 13px;
+  border-color: var(--modal-rule);
+}
+
+.modal .actions .info {
+  max-width: 38ch;
+  color: var(--modal-tertiary);
+  font-size: 10px;
+  letter-spacing: .02em;
+  line-height: 1.45;
+}
+
+.modal .actions .right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.modal .actions .btn {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--modal-rule);
+  color: var(--modal-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.modal .actions .btn:hover {
+  border-color: var(--modal-rule-strong);
+  color: var(--modal-paper);
+}
+
+.modal .actions .btn.primary {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: #09090a;
+}
+
+.modal button:focus-visible,
+.modal a:focus-visible,
+.modal input:focus-visible,
+.modal select:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .modal-bg { padding: 12px; }
+
+  .modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 13px 18px 18px;
+  }
+
+  .modal-tabs {
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .modal-tabs button,
+  .modal-tabs .x { font-size: 10px; }
+
+  .field {
+    min-height: 44px;
+    gap: 13px;
+  }
+
+  .field select,
+  .field input[type="number"],
+  .modal-text-input {
+    max-width: 66%;
+    font-size: 12px;
+  }
+
+  .field select {
+    max-width: 100%;
+  }
+
+  .field > label:first-child {
+    min-width: 0;
+    max-width: 34%;
+  }
+
+  .field:has(> select) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .field:has(> select) > label:first-child {
+    max-width: none;
+  }
+
+  .field:has(> select) > select {
+    width: 100%;
+    text-align: left;
+  }
+
+  .modal-help { max-width: none; }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .beta-sync {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-actions {
+    justify-content: space-between;
+  }
+
+  .modal .actions {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .modal .actions .info { display: none; }
+}
+
+@media (max-width: 350px) {
+  .modal-tabs { gap: 13px; }
+  .modal-tabs button,
+  .modal-tabs .x { letter-spacing: .04em; }
+  .modal { padding-inline: 13px; }
+}
 </style>
 </head>
 <body :class="{ idle, running: state.running }">
@@ -1861,7 +2353,7 @@ body {
 
         <div class="section-h" style="margin-top: 1.6rem;">companion</div>
         <div class="field"><label>show desk cat</label><label class="switch"><input type="checkbox" v-model="state.companionEnabled"><span class="slider"></span></label></div>
-        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+        <div class="modal-help">
           a tiny line-art cat that lives on the edge of your screen.<br>
           drag it anywhere · sleeps during breaks · perks up when phases end.<br>
           <a @click="resetCompanionPosition" style="color:var(--muted);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);">reset position →</a>
@@ -1882,7 +2374,7 @@ body {
           <input type="range" min="0" max="100" step="1" v-model.number="state.ambientVolume">
           <span class="num">{{ state.ambientVolume }}</span>
         </div>
-        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+        <div class="modal-help">
           generated in-browser via web audio. no files, no network.<br>
           pink ≈ rainfall · brown ≈ low rumble · white ≈ tv static.
         </div>
@@ -1896,13 +2388,12 @@ body {
         <div class="field"><label>enable</label><label class="switch"><input type="checkbox" v-model="draft.musicEnabled"><span class="slider"></span></label></div>
         <div class="field">
           <label>bridge url</label>
-          <input type="text" v-model="draft.musicBridgeUrl"
+          <input class="modal-text-input" type="text" v-model="draft.musicBridgeUrl"
                  spellcheck="false"
-                 style="background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);font:inherit;font-size:0.85rem;text-align:right;padding:0.25rem 0;width:14rem;"
                  @focus="$event.target.style.borderBottomColor='var(--text)'"
                  @blur="$event.target.style.borderBottomColor='var(--line)'">
         </div>
-        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+        <div class="modal-help">
           <template v-if="musicStatus === 'disconnected'">
             <span style="color:#d97777;">cannot reach bridge.</span> start the binary, or download it:<br>
             <a href="https://github.com/TT1nKer/pomodoroAKAtimer/releases/latest" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);">github releases ↗</a>
@@ -1928,7 +2419,7 @@ body {
             <div class="section-h" style="margin:0;">SYNC · BETA</div>
             <div class="identity">{{ beta.authenticated ? beta.email : (beta.checked && !beta.configured ? 'Google OAuth pending' : 'local only') }}</div>
           </div>
-          <div style="display:flex;gap:.5rem;align-items:center;">
+          <div class="beta-actions">
             <span class="state">{{ beta.status }}</span>
             <button v-if="beta.authenticated" type="button" @click="syncBetaStats" :disabled="beta.busy">↻</button>
             <button v-if="beta.authenticated" type="button" @click="logoutBeta" :disabled="beta.busy">logout</button>
@@ -1981,13 +2472,13 @@ body {
         <div class="field"><label>tracking since</label><span style="color: var(--text);">{{ stats.all.since }}</span></div>
 
         <div class="section-h" style="margin-top: 1.6rem;">backup</div>
-        <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
+        <div class="modal-help">
           local stats remain available offline. beta sync merges completed focus sessions<br>
           across devices after Google login. export remains the portable backup.
         </div>
-        <div style="display:flex;gap:1.6rem;margin-top:0.9rem;">
-          <a @click="exportStats" style="font-size:0.82rem;letter-spacing:0.2em;color:var(--muted);cursor:pointer;text-transform:lowercase;">export stats →</a>
-          <a @click="$refs.statsImportInput.click()" style="font-size:0.82rem;letter-spacing:0.2em;color:var(--muted);cursor:pointer;text-transform:lowercase;">import stats →</a>
+        <div class="modal-links">
+          <a @click="exportStats">export stats →</a>
+          <a @click="$refs.statsImportInput.click()">import stats →</a>
           <input ref="statsImportInput" type="file" accept=".json,application/json" style="display:none" @change="importStats">
         </div>
 
