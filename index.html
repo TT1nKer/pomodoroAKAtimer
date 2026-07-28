@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pomodoro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200;300;400&display=swap" rel="stylesheet">
-<link rel="icon" id="favicon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0a0a'/%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%23ededed' stroke-width='4'/%3E%3C/svg%3E">
+<title>TT1nKer / focus</title>
+<meta name="theme-color" content="#0b0b0d">
+<meta name="description" content="A quiet, offline focus instrument by TT1nKer.">
+<link rel="icon" id="favicon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0b0d'/%3E%3Ccircle cx='32' cy='32' r='26' fill='none' stroke='%23db4e75' stroke-width='4'/%3E%3C/svg%3E">
 <script src="./vue.global.prod.js"></script>
 <style>
 :root {
@@ -153,6 +152,7 @@ body {
 }
 
 .phase {
+  margin-top: 0;
   font-size: clamp(1.2rem, 2.4vmin, 1.8rem);
   letter-spacing: 0.5em;
   color: var(--muted);
@@ -740,6 +740,628 @@ body {
 }
 
 .idle .companion { opacity: 0.5; }
+
+/* ── TT1nKer temporal instrument ─────────────────────── */
+:root {
+  --bg: #0b0b0d;
+  --text: #f1efe7;
+  --muted: #8a8a91;
+  --dim: #2e2e34;
+  --line: rgba(241, 239, 231, 0.13);
+  --line-strong: rgba(241, 239, 231, 0.34);
+  --signal: #db4e75;
+  --signal-rgb: 219, 78, 117;
+  --paper: #f1efe7;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background:
+    linear-gradient(90deg, transparent calc(50% - .5px), rgba(241,239,231,.045) 50%, transparent calc(50% + .5px)),
+    radial-gradient(circle at 72% 48%, rgba(var(--signal-rgb), .055), transparent 34%),
+    var(--bg);
+}
+
+#app {
+  height: 100dvh;
+  min-height: 620px;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: 78px 1fr 92px;
+  overflow: hidden;
+  transition: --signal .25s ease;
+}
+
+#app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: .42;
+  background-image: radial-gradient(rgba(241,239,231,.19) .65px, transparent .65px);
+  background-size: 5px 5px;
+  mask-image: linear-gradient(90deg, #000, transparent 48%, transparent 60%, #000);
+}
+
+#app.phase-focus {
+  --signal: #db4e75;
+  --signal-rgb: 219, 78, 117;
+}
+
+#app.phase-short {
+  --signal: #13aab5;
+  --signal-rgb: 19, 170, 181;
+}
+
+#app.phase-long {
+  --signal: #2948e8;
+  --signal-rgb: 41, 72, 232;
+}
+
+.topbar {
+  position: relative;
+  inset: auto;
+  align-self: stretch;
+  width: 100%;
+  height: 78px;
+  padding: 0 clamp(24px, 4.5vw, 72px);
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.topbar::before {
+  content: "";
+  position: absolute;
+  left: clamp(24px, 4.5vw, 72px);
+  top: 0;
+  width: 8px;
+  height: 78px;
+  background: var(--signal);
+}
+
+.topbar a,
+.topbar button {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.topbar a:hover,
+.topbar a:focus-visible,
+.topbar button:hover,
+.topbar button:focus-visible {
+  color: var(--text);
+}
+
+.topbar button {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.topbar .archive-link {
+  margin-left: 28px;
+  color: var(--text);
+}
+
+.brand-compact {
+  display: none;
+}
+
+.topbar .right {
+  gap: clamp(18px, 2.4vw, 40px);
+}
+
+.center {
+  grid-row: 2;
+  align-self: stretch;
+  width: 100%;
+  padding: clamp(28px, 4.5vh, 60px) clamp(24px, 4.5vw, 72px) 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr);
+  grid-template-rows: 1fr auto auto;
+  align-items: center;
+  column-gap: clamp(36px, 6vw, 110px);
+  row-gap: 18px;
+}
+
+.timer-copy {
+  min-width: 0;
+  align-self: center;
+}
+
+.phase {
+  margin-bottom: clamp(18px, 3vh, 34px);
+  padding-left: 14px;
+  border-left: 5px solid var(--signal);
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: .24em;
+  text-align: left;
+  text-indent: 0;
+  text-transform: uppercase;
+}
+
+.phase .phase-index {
+  color: var(--signal);
+}
+
+.digits-wrap {
+  justify-content: flex-start;
+  width: max-content;
+  max-width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(92px, 15vw, 238px);
+  font-weight: 800;
+  line-height: .78;
+  letter-spacing: -.085em;
+  color: var(--paper);
+}
+
+.digits-wrap .colon {
+  position: relative;
+  top: -.06em;
+  margin: 0 .035em;
+  color: var(--signal);
+  font-size: .6em;
+}
+
+.digits-wrap.editable:hover,
+.digits-wrap.editable:focus-within {
+  color: #fff;
+}
+
+.edit-input {
+  width: 5.7ch;
+  text-align: left;
+  caret-color: var(--signal);
+}
+
+.eta {
+  margin: clamp(20px, 3vh, 34px) 0 0;
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.eta .v {
+  color: var(--text);
+}
+
+.temporal-field {
+  position: relative;
+  justify-self: end;
+  width: min(36vw, 500px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.temporal-field::before,
+.temporal-field::after {
+  content: "";
+  position: absolute;
+  background: var(--line);
+}
+
+.temporal-field::before {
+  left: -8%;
+  right: -8%;
+  height: 1px;
+}
+
+.temporal-field::after {
+  top: -8%;
+  bottom: -8%;
+  width: 1px;
+}
+
+.time-ring {
+  --remaining: 360deg;
+  position: relative;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(from -90deg, var(--signal) var(--remaining), var(--dim) 0);
+  transition: background .2s linear;
+  box-shadow: 0 0 80px rgba(var(--signal-rgb), .08);
+}
+
+.time-ring::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.time-ring::after {
+  content: "";
+  position: absolute;
+  inset: 36%;
+  border-radius: inherit;
+  background: var(--signal);
+  box-shadow: 0 0 0 18px rgba(var(--signal-rgb), .09);
+  transform: scale(.72);
+  transition: transform .35s ease, box-shadow .35s ease;
+}
+
+.running .time-ring::after {
+  transform: scale(1);
+  box-shadow: 0 0 0 28px rgba(var(--signal-rgb), .07);
+}
+
+.ring-scale {
+  position: absolute;
+  inset: 3%;
+  border-radius: 50%;
+  opacity: .42;
+  background: repeating-conic-gradient(from -90deg, var(--text) 0 .5deg, transparent .5deg 6deg);
+  mask: radial-gradient(transparent 68%, #000 69% 72%, transparent 73%);
+}
+
+.ring-readout {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.ring-readout strong {
+  color: var(--text);
+  font-size: clamp(20px, 2.6vw, 38px);
+  letter-spacing: -.05em;
+}
+
+.ring-readout span {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .22em;
+}
+
+.session-rail {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 124px 1fr;
+  gap: 24px;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.rail-label {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.7;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.rail-label b {
+  display: block;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.session-strip {
+  width: 100%;
+  height: 34px;
+  gap: 6px;
+}
+
+.session-strip .seg {
+  appearance: none;
+  min-width: 0;
+  padding: 0;
+  background: var(--dim);
+  color: transparent;
+  border: 1px solid transparent;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.session-strip .seg:hover,
+.session-strip .seg:focus-visible {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.session-strip .seg.done {
+  background: var(--line-strong);
+}
+
+.session-strip .seg.current {
+  height: 34px;
+  background: var(--signal);
+  color: var(--bg);
+}
+
+.total-bar {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.total-bar .fill {
+  background: var(--signal);
+}
+
+.controls {
+  position: relative;
+  inset: auto;
+  transform: none;
+  grid-row: 3;
+  align-self: stretch;
+  width: 100%;
+  padding: 0 clamp(24px, 4.5vw, 72px);
+  border-top: 1px solid var(--line);
+  gap: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.45fr 1fr;
+}
+
+.controls .btn {
+  min-height: 92px;
+  padding: 0 6px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.controls .btn:first-child {
+  border-left: 1px solid var(--line);
+}
+
+.controls .btn:hover,
+.controls .btn:focus-visible {
+  color: var(--text);
+  background: rgba(241,239,231,.035);
+}
+
+.controls .btn.primary {
+  color: var(--bg);
+  background: var(--signal);
+}
+
+.controls .btn.primary:hover,
+.controls .btn.primary:focus-visible {
+  color: var(--bg);
+  background: var(--text);
+}
+
+.feedback-menu {
+  top: calc(100% + 24px);
+  background: var(--bg);
+  border-color: var(--line-strong);
+}
+
+.np {
+  left: clamp(24px, 4.5vw, 72px);
+  bottom: 110px;
+}
+
+.modal-bg {
+  backdrop-filter: blur(10px);
+  background: rgba(4,4,5,.82);
+}
+
+.modal {
+  border-color: var(--line-strong);
+  box-shadow: 0 30px 90px rgba(0,0,0,.5);
+}
+
+.btn:focus-visible,
+.topbar a:focus-visible,
+.topbar button:focus-visible,
+.session-strip .seg:focus-visible,
+.feedback-menu a:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 4px;
+}
+
+.idle .topbar,
+.idle .controls,
+.idle .session-rail,
+.idle .total-bar,
+.idle .np {
+  opacity: .14;
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  #app {
+    min-height: 560px;
+    grid-template-rows: 64px 1fr 76px;
+  }
+
+  .topbar {
+    height: 64px;
+    padding-inline: 20px;
+  }
+
+  .topbar::before {
+    left: 20px;
+    height: 64px;
+    width: 6px;
+  }
+
+  .topbar .archive-link {
+    margin-left: 20px;
+  }
+
+  .topbar .right {
+    gap: 16px;
+  }
+
+  .topbar .optional-link {
+    display: none;
+  }
+
+  .center {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 18px;
+    padding: 28px 20px 16px;
+    overflow: auto;
+  }
+
+  .timer-copy {
+    align-self: end;
+  }
+
+  .digits-wrap {
+    font-size: clamp(76px, 25vw, 150px);
+  }
+
+  .temporal-field {
+    position: absolute;
+    right: -13vw;
+    top: 22%;
+    width: min(54vw, 360px);
+    opacity: .34;
+    z-index: -1;
+  }
+
+  .ring-readout {
+    display: none;
+  }
+
+  .session-rail {
+    grid-column: 1;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rail-label {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .rail-label b {
+    display: inline;
+  }
+
+  .total-bar {
+    grid-column: 1;
+  }
+
+  .controls {
+    min-height: 76px;
+    padding-inline: 20px;
+  }
+
+  .controls .btn {
+    min-height: 76px;
+  }
+
+  .modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    font-size: 8px;
+  }
+
+  .topbar .feedback-wrap {
+    display: none;
+  }
+
+  .digits-wrap {
+    font-size: clamp(72px, 28vw, 112px);
+  }
+
+  .phase {
+    margin-bottom: 24px;
+  }
+
+  .eta {
+    margin-top: 24px;
+  }
+
+  .session-strip {
+    gap: 3px;
+    height: 28px;
+  }
+
+  .session-strip .seg.current {
+    height: 28px;
+  }
+
+  .controls {
+    padding-inline: 0;
+  }
+
+  .controls .btn:first-child {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand-full {
+    display: none;
+  }
+
+  .brand-compact {
+    display: inline;
+  }
+
+  .controls .btn {
+    font-size: 8px;
+    letter-spacing: .16em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  .time-ring,
+  .time-ring::after {
+    transition: none;
+  }
+}
 </style>
 </head>
 <body :class="{ idle, running: state.running }">
@@ -747,13 +1369,17 @@ body {
 <div id="app">
 
   <div class="topbar">
-    <a @click="openTab('session')">session</a>
+    <a class="archive-link" href="https://ttinker.net">
+      <span class="brand-full">[ TT1? / 06 / FOCUS TOOL ]</span>
+      <span class="brand-compact">[ TT1? / 06 ]</span>
+    </a>
     <div class="right">
-      <a @click="openTab('stats')">stats</a>
-      <a @click="toggleFullscreen">fullscreen</a>
-      <a @click="openTab('settings')">settings</a>
+      <button type="button" @click="openTab('stats')">stats</button>
+      <button type="button" class="optional-link" @click="openTab('session')">session</button>
+      <button type="button" class="optional-link" @click="toggleFullscreen">fullscreen</button>
+      <button type="button" @click="openTab('settings')">settings</button>
       <div class="feedback-wrap">
-        <a @click.stop="feedbackOpen = !feedbackOpen">feedback</a>
+        <button type="button" @click.stop="feedbackOpen = !feedbackOpen" :aria-expanded="feedbackOpen">feedback</button>
         <div v-if="feedbackOpen" class="feedback-menu" @click.stop>
           <a href="https://github.com/TT1nKer/pomodoroAKAtimer/issues/new" target="_blank" rel="noopener">open an issue</a>
           <a href="mailto:hostsjim22@gmail.com?subject=timer%20feedback">email me</a>
@@ -763,40 +1389,66 @@ body {
   </div>
 
   <div class="center">
-    <div class="phase">{{ phaseLabel }}</div>
+    <div class="timer-copy">
+      <h1 class="phase" aria-live="polite">
+        <span class="phase-index">0{{ state.idx + 1 }} / {{ String(state.session.length).padStart(2, '0') }}</span>
+        · {{ phaseLabel }}
+      </h1>
 
-    <div class="digits-wrap"
-         :class="{ editable: !state.running }"
-         @click="enterEdit"
-         @wheel.prevent="onWheel">
-      <template v-if="!editing">
-        <span>{{ minutes }}</span><span class="colon">:</span><span>{{ seconds }}</span>
-      </template>
-      <input v-else
-             ref="editEl"
-             class="edit-input"
-             v-model="editValue"
-             @keydown.enter="commitEdit"
-             @keydown.esc="cancelEdit"
-             @blur="commitEdit"
-             spellcheck="false">
+      <div class="digits-wrap"
+           :class="{ editable: !state.running }"
+           role="timer"
+           :aria-label="`${minutes} minutes ${seconds} seconds remaining`"
+           @click="enterEdit"
+           @wheel.prevent="onWheel">
+        <template v-if="!editing">
+          <span>{{ minutes }}</span><span class="colon">:</span><span>{{ seconds }}</span>
+        </template>
+        <input v-else
+               ref="editEl"
+               class="edit-input"
+               v-model="editValue"
+               aria-label="Edit timer minutes"
+               @keydown.enter="commitEdit"
+               @keydown.esc="cancelEdit"
+               @blur="commitEdit"
+               spellcheck="false">
+      </div>
+
+      <div class="eta" v-if="state.running || state.remainingMs < state.totalMs">
+        ends <span class="v">{{ etaText }}</span>
+      </div>
+      <div class="eta" v-else style="opacity: 0.55;">
+        armed for <span class="v">{{ etaText }}</span>
+      </div>
     </div>
 
-    <div class="eta" v-if="state.running || state.remainingMs < state.totalMs">
-      ends <span class="v">{{ etaText }}</span>
-    </div>
-    <div class="eta" v-else style="opacity: 0.4;">
-      will end <span class="v">{{ etaText }}</span>
+    <div class="temporal-field" aria-hidden="true">
+      <div class="time-ring" :style="{ '--remaining': (progressFrac * 360) + 'deg' }">
+        <div class="ring-scale"></div>
+        <div class="ring-readout">
+          <strong>{{ Math.round(progressFrac * 100) }}%</strong>
+          <span>{{ state.running ? 'counting' : 'held' }}</span>
+        </div>
+      </div>
     </div>
 
-    <div class="session-strip">
-      <div v-for="(p, i) in state.session" :key="i"
-           class="seg"
-           :class="[p.type, { current: i === state.idx, done: i < state.idx }]"
-           :style="{ flex: p.min }"
-           :title="`${labelOf(p.type)} · ${p.min}m`"
-           @click="jumpTo(i)">
-        {{ p.min }}
+    <div class="session-rail">
+      <div class="rail-label">
+        session route
+        <b>{{ state.idx + 1 }} / {{ state.session.length }}</b>
+      </div>
+      <div class="session-strip">
+        <button v-for="(p, i) in state.session" :key="i"
+                type="button"
+                class="seg"
+                :class="[p.type, { current: i === state.idx, done: i < state.idx }]"
+                :style="{ flex: p.min }"
+                :title="`${labelOf(p.type)} · ${p.min}m`"
+                :aria-label="`${labelOf(p.type)}, ${p.min} minutes${i === state.idx ? ', current' : ''}`"
+                @click="jumpTo(i)">
+          {{ p.min }}
+        </button>
       </div>
     </div>
 
@@ -807,9 +1459,9 @@ body {
   </div>
 
   <div class="controls">
-    <button class="btn" @click="reset">reset</button>
-    <button class="btn primary" @click="toggle">{{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
-    <button class="btn" @click="skip">next</button>
+    <button class="btn" @click="reset">01 / reset</button>
+    <button class="btn primary" @click="toggle">02 / {{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
+    <button class="btn" @click="skip">03 / next</button>
   </div>
 
   <div class="np"
@@ -913,7 +1565,7 @@ body {
         <button :class="{active: tab === 'session'}"  @click="tab = 'session'">session</button>
         <button :class="{active: tab === 'settings'}" @click="tab = 'settings'">settings</button>
         <button :class="{active: tab === 'stats'}"    @click="tab = 'stats'">stats</button>
-        <span class="x" @click="closeModal(false)">close</span>
+        <button type="button" class="x" @click="closeModal(false)">close</button>
       </div>
 
       <template v-if="tab === 'session'">
@@ -1817,7 +2469,7 @@ createApp({
 
       let n = 0;
       titleFlashTimer = setInterval(() => {
-        document.title = (n++ % 2 === 0) ? "▌▌  time" : `pomodoro · ${LABELS[currentPhase.value.type]} done`;
+        document.title = (n++ % 2 === 0) ? "▌▌  time" : `TT1nKer / ${LABELS[currentPhase.value.type]} done`;
         if (n > 12) { clearInterval(titleFlashTimer); titleFlashTimer = null; updateTitle(); }
       }, 500);
 
@@ -1877,9 +2529,14 @@ createApp({
 
     const faviconEl = document.getElementById("favicon");
     function updateFavicon() {
+      const phaseColor = {
+        focus: "#db4e75",
+        short: "#13aab5",
+        long: "#2948e8",
+      }[currentPhase.value.type] || "#db4e75";
       if (!state.dynamicFavicon) {
         faviconEl.href = "data:image/svg+xml," + encodeURIComponent(
-          `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#0a0a0a'/><circle cx='32' cy='32' r='26' fill='none' stroke='#ededed' stroke-width='4'/></svg>`
+          `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#0b0b0d'/><circle cx='32' cy='32' r='26' fill='none' stroke='${phaseColor}' stroke-width='4'/></svg>`
         );
         return;
       }
@@ -1887,9 +2544,9 @@ createApp({
       const c = 2 * Math.PI * 26;
       const off = c * (1 - f);
       const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-        <rect width='64' height='64' fill='#0a0a0a'/>
-        <circle cx='32' cy='32' r='26' fill='none' stroke='#2a2a2d' stroke-width='4'/>
-        <circle cx='32' cy='32' r='26' fill='none' stroke='#ededed' stroke-width='4'
+        <rect width='64' height='64' fill='#0b0b0d'/>
+        <circle cx='32' cy='32' r='26' fill='none' stroke='#2e2e34' stroke-width='4'/>
+        <circle cx='32' cy='32' r='26' fill='none' stroke='${phaseColor}' stroke-width='4'
                 stroke-dasharray='${c.toFixed(2)}' stroke-dashoffset='${off.toFixed(2)}'
                 transform='rotate(-90 32 32)' stroke-linecap='butt'/>
       </svg>`;
@@ -1899,7 +2556,7 @@ createApp({
     function updateTitle() {
       document.title = (state.running || state.remainingMs < state.totalMs)
         ? `${minutes.value}:${seconds.value}`
-        : `pomodoro`;
+        : `TT1nKer / focus`;
     }
     // title + favicon only need to refresh when the displayed seconds change
     // (or on phase / pause toggles). watching the displayed string buckets
@@ -2069,6 +2726,18 @@ createApp({
     });
     watch(() => state.ambientVolume, (v) => setAmbientGain(v));
     watch(() => state.companionEnabled, () => save());
+    watch(
+      () => [state.session[state.idx]?.type || "focus", state.running, idle.value],
+      ([type, running, isIdle]) => {
+        const root = document.getElementById("app");
+        if (!root) return;
+        root.classList.remove("phase-focus", "phase-short", "phase-long");
+        root.classList.add(`phase-${type}`);
+        root.classList.toggle("running", running);
+        root.classList.toggle("idle", isIdle);
+      },
+      { immediate: true },
+    );
 
     return {
       state, idle, showModal, feedbackOpen, tab, draft,
