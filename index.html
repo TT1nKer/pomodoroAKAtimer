@@ -1397,6 +1397,147 @@ body {
     transition: none;
   }
 }
+
+/* Minimal focus surface: state, time, one action. Secondary controls stay available
+   in the top bar and session/settings views without competing with the timer. */
+body {
+  background: var(--bg);
+}
+
+#app::before {
+  display: none;
+}
+
+.topbar::before {
+  display: none;
+}
+
+.topbar .archive-link {
+  margin-left: 0;
+  color: var(--text);
+  letter-spacing: .08em;
+  text-transform: none;
+}
+
+.phase .phase-index {
+  display: none;
+}
+
+.phase::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.digits-wrap {
+  letter-spacing: -.055em;
+}
+
+.digits-wrap .colon {
+  top: 0;
+  margin: 0 .045em;
+  color: var(--muted);
+  font-size: .54em;
+  font-weight: 400;
+}
+
+.session-rail {
+  display: none;
+}
+
+.rail-label {
+  display: none;
+}
+
+.session-strip .seg,
+.session-strip .seg.current {
+  border-radius: 999px;
+  color: transparent;
+}
+
+.controls .btn {
+  letter-spacing: .08em;
+  text-transform: none;
+}
+
+@media (min-width: 901px) {
+  #app {
+    grid-template-rows: 72px 1fr 78px;
+  }
+
+  .topbar { height: 72px; }
+  .center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    padding: 0 40px 34px;
+  }
+  .timer-copy { width: min(920px, 100%); text-align: center; }
+  .phase {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 26px;
+    padding: 0;
+    border: 0;
+    font-size: 10px;
+    letter-spacing: .22em;
+  }
+  .phase-index { padding-right: 12px; border-right: 1px solid var(--line-strong); }
+  .digits-wrap {
+    justify-content: center;
+    width: 100%;
+    font-size: clamp(150px, 19vw, 280px);
+    line-height: .72;
+    letter-spacing: -.1em;
+  }
+  .eta { margin-top: 28px; text-align: center; }
+  .temporal-field { display: none; }
+  .rail-label { font-size: 8px; white-space: nowrap; }
+  .session-strip { height: 18px; gap: 4px; }
+  .session-strip .seg,
+  .session-strip .seg.current { height: 18px; }
+  .total-bar { display: none; }
+  .controls { grid-template-columns: 1fr minmax(220px, 300px) 1fr; padding: 0 max(40px, calc((100vw - 920px) / 2)); }
+  .controls .btn { min-height: 78px; border: 0; font-size: 10px; }
+  .controls .btn:first-child { border: 0; }
+  .controls .btn.primary {
+    min-height: 44px;
+    margin: 17px 0;
+    border: 1px solid var(--signal);
+    border-radius: 2px;
+  }
+}
+
+@media (max-width: 900px) {
+  .temporal-field { display: none; }
+  .center { display: flex; flex-direction: column; align-items: stretch; }
+  .timer-copy { text-align: center; }
+  .phase { display: inline-flex; border-left: 0; padding-left: 0; gap: 10px; }
+  .digits-wrap { justify-content: center; width: 100%; }
+  .topbar .archive-link { margin-left: 0; }
+  .controls {
+    grid-template-columns: 1fr minmax(132px, 42vw) 1fr;
+    padding-inline: 20px;
+  }
+  .controls .btn { border: 0; }
+  .controls .btn:first-child { border: 0; }
+  .controls .btn.primary {
+    min-height: 44px;
+    margin: 16px 0;
+    border: 1px solid var(--signal);
+    border-radius: 2px;
+  }
+}
+
+@media (max-width: 560px) {
+  .controls { padding-inline: 0; }
+}
 </style>
 </head>
 <body :class="{ idle, running: state.running }">
@@ -1405,8 +1546,8 @@ body {
 
   <div class="topbar">
     <a class="archive-link" href="https://ttinker.net">
-      <span class="brand-full">[ TT1? / 06 / FOCUS TOOL ]</span>
-      <span class="brand-compact">[ TT1? / 06 ]</span>
+      <span class="brand-full">TT1nKer / focus</span>
+      <span class="brand-compact">focus</span>
     </a>
     <div class="right">
       <button type="button" @click="openTab('stats')">stats</button>
@@ -1427,7 +1568,7 @@ body {
     <div class="timer-copy">
       <h1 class="phase" aria-live="polite">
         <span class="phase-index">0{{ state.idx + 1 }} / {{ String(state.session.length).padStart(2, '0') }}</span>
-        · {{ phaseLabel }}
+        {{ phaseLabel }}
       </h1>
 
       <div class="digits-wrap"
@@ -1494,9 +1635,9 @@ body {
   </div>
 
   <div class="controls">
-    <button class="btn" @click="reset">01 / reset</button>
-    <button class="btn primary" @click="toggle">02 / {{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
-    <button class="btn" @click="skip">03 / next</button>
+    <button class="btn" @click="reset">reset</button>
+    <button class="btn primary" @click="toggle">{{ state.running ? 'pause' : (progressFrac < 1 ? 'resume' : 'start') }}</button>
+    <button class="btn" @click="skip">next</button>
   </div>
 
   <div class="np"
