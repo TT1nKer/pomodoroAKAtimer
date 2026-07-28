@@ -1,10 +1,24 @@
-# timer
+<p align="center">
+  <img src="docs/readme-cover.svg" alt="pomodoroAKAtimer — focus tool" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://ttinker.net">ttinker.net</a> ·
+  <a href="https://tt1nker.github.io/pomodoroAKAtimer/">open the timer</a> ·
+  <a href="https://github.com/TT1nKer/pomodoroAKAtimer/releases/latest">music bridge</a>
+</p>
+
+# pomodoroAKAtimer
 
 a minimalist pomodoro timer. single-file html, vue 3 bundled, runs offline.
 
 **try it now** — no install, no signup:
 
 → <https://tt1nker.github.io/pomodoroAKAtimer/>
+
+| State | Evidence | Current boundary |
+| --- | --- | --- |
+| Shipped · browser app + `v0.1.2` bridge | Live GitHub Pages build; Linux, macOS ARM64, and Windows bridge assets | Browser state stays in `localStorage`; desktop media control is optional and platform-dependent |
 
 ## features
 
