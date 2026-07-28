@@ -122,6 +122,19 @@ The optional sync beta uses Google OAuth and stores completed focus entries in a
 user-isolated SQLite database on `ttinker.net`. Local stats remain the offline
 source and are merged after login; passwords and Google access tokens are not stored.
 
+### Google OAuth beta setup
+
+Create a Google OAuth 2.0 **Web application** client and configure:
+
+- authorized JavaScript origin: `https://ttinker.net`
+- authorized redirect URI: `https://ttinker.net/pomodoro/api/beta/oauth/google/callback`
+
+Install the client ID and secret in `/etc/ttinker-pomodoro-sync.env` using
+[`deploy/pomodoro-sync.env.example`](deploy/pomodoro-sync.env.example), keep the
+file mode at `0600`, then restart `ttinker-pomodoro-sync.service`. Google access
+tokens are verified during login and discarded; only Google `sub`, email, the
+server session, and focus stats are persisted.
+
 ## license
 
 mit.

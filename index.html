@@ -1926,7 +1926,7 @@ body {
         <div class="beta-sync">
           <div>
             <div class="section-h" style="margin:0;">SYNC · BETA</div>
-            <div class="identity">{{ beta.authenticated ? beta.email : 'local only' }}</div>
+            <div class="identity">{{ beta.authenticated ? beta.email : (beta.checked && !beta.configured ? 'Google OAuth pending' : 'local only') }}</div>
           </div>
           <div style="display:flex;gap:.5rem;align-items:center;">
             <span class="state">{{ beta.status }}</span>
@@ -2182,7 +2182,7 @@ createApp({
         beta.configured = !!session.configured;
         beta.authenticated = !!session.authenticated;
         beta.email = session.email || "";
-        beta.status = beta.authenticated ? "ready" : "local";
+        beta.status = beta.authenticated ? "ready" : (beta.configured ? "local" : "setup");
         beta.busy = false;
         if (beta.authenticated && sync) await syncBetaStats();
       } catch (error) {
