@@ -1184,6 +1184,48 @@ body {
   white-space: nowrap;
 }
 
+.beta-sync {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .8rem 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: .9rem 0;
+  border-block: 1px solid var(--line);
+}
+
+.beta-sync .identity {
+  min-width: 0;
+  color: var(--muted);
+  font-size: .72rem;
+  letter-spacing: .08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beta-sync .state {
+  color: var(--signal);
+  font-size: .64rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.beta-sync button {
+  appearance: none;
+  min-height: 34px;
+  padding: 0 .8rem;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: .72rem;
+  cursor: pointer;
+}
+
+.beta-sync button:disabled { opacity: .45; cursor: default; }
+.beta-sync .error { grid-column: 1 / -1; color: #d97777; font-size: .68rem; }
+
 .controls .btn:first-child {
   border-left: 1px solid var(--line);
 }
@@ -1881,6 +1923,20 @@ body {
       </template>
 
       <template v-if="tab === 'stats'">
+        <div class="beta-sync">
+          <div>
+            <div class="section-h" style="margin:0;">SYNC · BETA</div>
+            <div class="identity">{{ beta.authenticated ? beta.email : 'local only' }}</div>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <span class="state">{{ beta.status }}</span>
+            <button v-if="beta.authenticated" type="button" @click="syncBetaStats" :disabled="beta.busy">↻</button>
+            <button v-if="beta.authenticated" type="button" @click="logoutBeta" :disabled="beta.busy">logout</button>
+            <button v-else type="button" @click="loginWithGoogle" :disabled="beta.busy || (beta.checked && !beta.configured)">Google ↗</button>
+          </div>
+          <div v-if="beta.error" class="error">{{ beta.error }}</div>
+        </div>
+
         <div class="section-h">focus time</div>
         <div class="stat-grid">
           <div class="stat">
@@ -1926,9 +1982,8 @@ body {
 
         <div class="section-h" style="margin-top: 1.6rem;">backup</div>
         <div style="font-size:0.7rem;letter-spacing:0.18em;color:var(--dim);margin-top:0.5rem;line-height:1.7;">
-          stats live in localStorage scoped to this URL. they don't carry across<br>
-          <span style="color:var(--muted);">file://</span> and <span style="color:var(--muted);">https://tt1nker.github.io/...</span> — different origins.<br>
-          export to back up, import to merge from another origin.
+          local stats remain available offline. beta sync merges completed focus sessions<br>
+          across devices after Google login. export remains the portable backup.
         </div>
         <div style="display:flex;gap:1.6rem;margin-top:0.9rem;">
           <a @click="exportStats" style="font-size:0.82rem;letter-spacing:0.2em;color:var(--muted);cursor:pointer;text-transform:lowercase;">export stats →</a>
@@ -2086,6 +2141,110 @@ createApp({
 
     const statsLog = ref(loadStatsLog());
     const nowTick = ref(Date.now());
+    const beta = reactive({
+      checked: false,
+      configured: false,
+      authenticated: false,
+      email: "",
+      status: "local",
+      error: "",
+      busy: false,
+    });
+    let betaSyncTimer = null;
+
+    function mergeStatsLogs(localLog, remoteLog) {
+      const merged = new Map();
+      for (const entry of [...localLog, ...remoteLog]) {
+        if (!entry || entry.type !== "focus" || typeof entry.ts !== "number" || typeof entry.min !== "number") continue;
+        merged.set(`${entry.ts}:${entry.min}`, { ts: Math.round(entry.ts), type: "focus", min: Math.round(entry.min) });
+      }
+      return [...merged.values()].sort((a, b) => a.ts - b.ts);
+    }
+
+    async function betaRequest(path, options = {}) {
+      const response = await fetch(`/pomodoro/api/beta${path}`, {
+        credentials: "same-origin",
+        cache: "no-store",
+        ...options,
+        headers: options.body ? { "Content-Type": "application/json", ...(options.headers || {}) } : options.headers,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `sync failed (${response.status})`);
+      return payload;
+    }
+
+    async function checkBetaSession({ sync = true } = {}) {
+      beta.busy = true;
+      beta.error = "";
+      try {
+        const session = await betaRequest("/session");
+        beta.checked = true;
+        beta.configured = !!session.configured;
+        beta.authenticated = !!session.authenticated;
+        beta.email = session.email || "";
+        beta.status = beta.authenticated ? "ready" : "local";
+        beta.busy = false;
+        if (beta.authenticated && sync) await syncBetaStats();
+      } catch (error) {
+        beta.checked = true;
+        beta.status = "offline";
+        beta.error = error.message || String(error);
+      } finally {
+        beta.busy = false;
+      }
+    }
+
+    function loginWithGoogle() {
+      window.location.assign("/pomodoro/api/beta/oauth/google/start");
+    }
+
+    async function logoutBeta() {
+      beta.busy = true;
+      beta.error = "";
+      try {
+        await betaRequest("/logout", { method: "POST" });
+        beta.authenticated = false;
+        beta.email = "";
+        beta.status = "local";
+      } catch (error) {
+        beta.error = error.message || String(error);
+      } finally {
+        beta.busy = false;
+      }
+    }
+
+    async function syncBetaStats() {
+      if (!beta.authenticated || beta.busy) return;
+      beta.busy = true;
+      beta.error = "";
+      beta.status = "syncing";
+      try {
+        const payload = await betaRequest("/stats", {
+          method: "POST",
+          body: JSON.stringify({ log: statsLog.value }),
+        });
+        const merged = mergeStatsLogs(statsLog.value, Array.isArray(payload.log) ? payload.log : []);
+        statsLog.value = merged;
+        saveStatsLog(merged);
+        const meta = loadMeta();
+        if (merged.length && (!meta.firstTs || merged[0].ts < meta.firstTs)) {
+          meta.firstTs = merged[0].ts;
+          saveMeta(meta);
+        }
+        beta.status = "synced";
+      } catch (error) {
+        beta.status = "local";
+        beta.error = error.message || String(error);
+      } finally {
+        beta.busy = false;
+      }
+    }
+
+    function scheduleBetaSync() {
+      if (!beta.authenticated) return;
+      clearTimeout(betaSyncTimer);
+      betaSyncTimer = setTimeout(syncBetaStats, 800);
+    }
 
     /* ── companion (dragable peeking cat) ─────────────── */
     const companion = reactive({ x: state.companionX, y: state.companionY });
@@ -2490,12 +2649,26 @@ createApp({
       saveStatsLog(trimmed);
       const meta = loadMeta();
       if (!meta.firstTs) { meta.firstTs = Date.now(); saveMeta(meta); }
+      scheduleBetaSync();
     }
-    function confirmResetStats() {
+    async function confirmResetStats() {
       if (confirm("reset all focus stats? this cannot be undone.")) {
+        if (beta.authenticated && !confirm("also delete the synced server copy?")) return;
+        if (beta.authenticated) {
+          beta.busy = true;
+          try {
+            await betaRequest("/stats", { method: "DELETE" });
+          } catch (error) {
+            beta.busy = false;
+            beta.error = error.message || String(error);
+            return;
+          }
+          beta.busy = false;
+        }
         statsLog.value = [];
         saveStatsLog([]);
         saveMeta({});
+        beta.status = beta.authenticated ? "synced" : "local";
       }
     }
 
@@ -2898,6 +3071,10 @@ createApp({
       nowTimer = setInterval(() => { nowTick.value = Date.now(); }, 1000);
       if (state.musicEnabled) startMusicPoll();
       if (state.ambientType !== "off") startAmbient(state.ambientType);
+      if (new URLSearchParams(window.location.search).has("beta")) {
+        history.replaceState(null, "", window.location.pathname);
+      }
+      checkBetaSession();
     });
     onUnmounted(() => {
       window.removeEventListener("keydown", onKey);
@@ -2905,6 +3082,7 @@ createApp({
       window.removeEventListener("touchstart", bumpIdle);
       if (tickId) clearInterval(tickId);
       if (nowTimer) clearInterval(nowTimer);
+      if (betaSyncTimer) clearTimeout(betaSyncTimer);
       stopMusicPoll();
       stopAmbient();
       releaseWakeLock();
@@ -2950,6 +3128,7 @@ createApp({
       addPhase, removePhase, loadPreset,
       onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
       toggleFullscreen,
+      beta, loginWithGoogle, logoutBeta, syncBetaStats,
       dismissAlert, confirmResetStats, exportStats, importStats,
     };
   },

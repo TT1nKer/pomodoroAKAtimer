@@ -30,7 +30,7 @@ a minimalist pomodoro timer. single-file html, vue 3 bundled, runs offline.
 - dynamic progress favicon, "ends at hh:mm" eta
 - built-in ambient noise generator (white / pink / brown)
 - optional desktop music integration (see below)
-- fully offline once loaded — no telemetry, no accounts
+- offline-first; optional Google login beta syncs completed focus stats to ttinker.net
 
 ## keyboard
 
@@ -117,6 +117,10 @@ stats live in `localStorage` under the page's origin. that means:
 - visiting via the live link (`tt1nker.github.io/...`) — stats persist forever for that URL
 - opening `index.html` directly via `file://` — stats persist *for that exact path*; moving the file resets them
 - serving locally via `python -m http.server` — stable origin, fine
+
+The optional sync beta uses Google OAuth and stores completed focus entries in a
+user-isolated SQLite database on `ttinker.net`. Local stats remain the offline
+source and are merged after login; passwords and Google access tokens are not stored.
 
 ## license
 

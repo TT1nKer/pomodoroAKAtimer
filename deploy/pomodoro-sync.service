@@ -1,0 +1,21 @@
+[Unit]
+Description=TT1nKer Pomodoro beta sync API
+After=network.target
+
+[Service]
+Type=simple
+User=ttinker-pomodoro
+Group=ttinker-pomodoro
+WorkingDirectory=/opt/ttinker-pomodoro-sync/current
+EnvironmentFile=-/etc/ttinker-pomodoro-sync.env
+ExecStart=/usr/bin/python3 /opt/ttinker-pomodoro-sync/current/server/pomodoro_sync_api.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ttinker-pomodoro-sync
+
+[Install]
+WantedBy=multi-user.target
