@@ -674,20 +674,39 @@ body {
 }
 .danger:hover { color: #d97777; }
 
-/* ── companion (peeking minimalist cat) ─────────────────────── */
+/* ── companion (TT1nKer signal cat) ────────────────────────── */
 .companion {
+  --cat-ink: #0b0b0d;
+  --cat-paper: #f1efe7;
   position: fixed;
   z-index: 6;
-  color: var(--text);
+  color: var(--cat-paper);
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: opacity 0.5s ease, filter 0.3s ease;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.25));
+  transition: opacity .45s ease, filter .25s ease;
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, .38));
 }
-.companion.dragging { cursor: grabbing; transition: none; }
+.companion:hover { filter: drop-shadow(0 5px 14px rgba(var(--signal-rgb), .18)); }
+.companion.dragging {
+  cursor: grabbing;
+  transition: none;
+  filter: drop-shadow(0 8px 16px rgba(var(--signal-rgb), .22));
+}
 .companion svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.companion .cat-shell {
+  fill: var(--cat-ink);
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+.companion .cat-detail {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.companion .cat-signal { fill: var(--signal); stroke: none; }
+.companion .cat-signal-stroke { fill: none; stroke: var(--signal); stroke-width: 2.2; }
 
 /* per-pose dimensions */
 .companion.pose-free   { width: 88px; height: 70px; }
@@ -697,49 +716,52 @@ body {
 .companion.pose-left   { width: 50px; height: 88px; }
 
 /* idle breathing on whichever body group is rendered */
-.companion .body { transform-origin: 50% 70%; animation: catBreathe 4s ease-in-out infinite; }
+.companion .body { transform-origin: 50% 78%; animation: catBreathe 4.8s ease-in-out infinite; }
 @keyframes catBreathe {
   0%, 100% { transform: scaleY(1); }
-  50%      { transform: scaleY(1.04); }
+  50%      { transform: scaleY(1.025); }
 }
 
-/* tail sway (only relevant for free pose) */
-.companion .tail { transform-origin: 78px 50px; animation: catTail 3s ease-in-out infinite; }
+/* The question-mark tail is the character's primary silhouette cue. */
+.companion .tail { transform-origin: 67px 54px; animation: catTail 4.6s ease-in-out infinite; }
 @keyframes catTail {
-  0%, 100% { transform: rotate(-4deg); }
-  50%      { transform: rotate(6deg); }
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(4deg); }
 }
 
-/* blink — random-feeling via long-gap step animation */
-.companion .eye { transform-origin: 50% 50%; animation: catBlink 6s step-end infinite; }
+/* Long quiet gaps keep the companion peripheral rather than distracting. */
+.companion .open-eyes { transform-origin: 44px 31px; animation: catBlink 7.2s step-end infinite; }
 @keyframes catBlink {
   0%, 96%, 100% { transform: scaleY(1); }
-  97%, 99%      { transform: scaleY(0.1); }
+  97%, 99%      { transform: scaleY(.12); }
 }
 
-/* mood: focus — slightly squinted */
-.companion.mood-focus .eye { animation: none; transform: scaleY(0.6); }
-.companion.mood-focus .tail { animation-duration: 6s; }
+/* Focus locks the asymmetric eyes and slows the question-mark tail. */
+.companion.mood-focus .open-eyes { animation: none; transform: scaleY(.72); }
+.companion.mood-focus .tail { animation-duration: 7s; }
+.companion.mood-focus .phase-beacon { opacity: 1; }
 
-/* mood: break — eyes closed (sleep arcs), gentler bob */
-.companion.mood-break .eye { animation: none; transform: scaleY(0.05); }
-.companion.mood-break .eye-closed { opacity: 1; }
+/* Break closes the eyes and dims the forehead phase beacon. */
+.companion.mood-break .open-eyes { opacity: 0; animation: none; }
+.companion.mood-break .closed-eyes { opacity: 1; }
+.companion.mood-break .phase-beacon { opacity: .38; }
 .companion.mood-break .body { animation: catSleep 5s ease-in-out infinite; }
 @keyframes catSleep {
   0%, 100% { transform: translateY(0) scaleY(1); }
-  50%      { transform: translateY(1px) scaleY(0.97); }
+  50%      { transform: translateY(1px) scaleY(.98); }
 }
-.companion .eye-closed { opacity: 0; transition: opacity 0.4s; }
+.companion .closed-eyes { opacity: 0; transition: opacity .3s ease; }
 
-/* mood: alert — small bounce */
-.companion.mood-alert { animation: catAlert 0.4s ease-out 3; }
-.companion.mood-alert .ear { transform: translateY(-2px); }
+/* A phase end is one short physical response plus a beacon pulse. */
+.companion.mood-alert { animation: catAlert .36s ease-out 3; }
+.companion.mood-alert .phase-beacon { animation: catBeacon .36s steps(2, end) 3; }
 @keyframes catAlert {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
+  50%      { transform: translateY(-5px); }
 }
+@keyframes catBeacon { 50% { opacity: .15; } }
 
-.idle .companion { opacity: 0.5; }
+.idle .companion { opacity: .74; }
 
 /* ── TT1nKer temporal instrument ─────────────────────── */
 :root {
@@ -1506,56 +1528,54 @@ body {
        @pointercancel="onCompanionUp"
        title="drag me anywhere">
 
-    <!-- pose: free (full standing/sitting cat) -->
-    <svg v-if="companionPose === 'free'" viewBox="0 0 88 70" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path class="tail" d="M 70 48 Q 84 42 80 26 Q 78 18 72 20" stroke-width="1.6"/>
+    <!-- Free pose: asymmetric signal eye + question-mark tail form one memorable silhouette. -->
+    <svg v-if="companionPose === 'free'" viewBox="0 0 88 70" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <g class="tail">
+        <path class="cat-signal-stroke" d="M64 57 C80 61 85 51 79 44 C75 39 69 39 70 32 C71 27 75 25 80 26"/>
+        <circle class="cat-signal" cx="64" cy="63" r="2.2"/>
+      </g>
       <g class="body">
-        <ellipse cx="44" cy="52" rx="24" ry="14" stroke-width="1.6"/>
-        <line x1="34" y1="65" x2="34" y2="68" stroke-width="1.6"/>
-        <line x1="54" y1="65" x2="54" y2="68" stroke-width="1.6"/>
-        <circle cx="44" cy="30" r="14" stroke-width="1.6"/>
-        <path class="ear" d="M 33 21 L 30 11 L 39 16 Z" stroke-width="1.6"/>
-        <path class="ear" d="M 55 21 L 58 11 L 49 16 Z" stroke-width="1.6"/>
-        <path d="M 34 18 L 33 13 L 37 16" stroke-width="0.8" opacity="0.45"/>
-        <path d="M 54 18 L 55 13 L 51 16" stroke-width="0.8" opacity="0.45"/>
-        <ellipse class="eye"  cx="38" cy="29" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <ellipse class="eye"  cx="50" cy="29" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-        <path class="eye-closed" d="M 36 29 Q 38 31 40 29" stroke-width="1" fill="none"/>
-        <path class="eye-closed" d="M 48 29 Q 50 31 52 29" stroke-width="1" fill="none"/>
-        <path d="M 43 34 L 45 34 L 44 35.4 Z" fill="currentColor" stroke="none"/>
-        <path d="M 44 35.4 Q 41.5 36.6 40.8 35.6 M 44 35.4 Q 46.5 36.6 47.2 35.6" stroke-width="0.8"/>
-        <line x1="34" y1="32.5" x2="26" y2="30.5" stroke-width="0.5"/>
-        <line x1="34" y1="34"   x2="26" y2="34"   stroke-width="0.5"/>
-        <line x1="54" y1="32.5" x2="62" y2="30.5" stroke-width="0.5"/>
-        <line x1="54" y1="34"   x2="62" y2="34"   stroke-width="0.5"/>
+        <path class="cat-shell" d="M26 65 C24 55 27 45 35 40 H53 C61 45 64 55 62 65 L55 67 L50 62 H38 L33 67 Z"/>
+        <path class="cat-detail" d="M38 48 L38 62 M50 48 L50 62" opacity=".45"/>
+        <path class="cat-shell" d="M27 33 L29 14 L38 20 Q44 17 50 20 L59 14 L61 33 Q60 45 44 47 Q28 45 27 33 Z"/>
+        <path class="cat-detail" d="M30 18 L36 22 M58 18 L52 22" opacity=".52"/>
+        <path class="phase-beacon cat-signal" d="M44 19 L48 23 L44 27 L40 23 Z"/>
+        <g class="open-eyes">
+          <path d="M35 31 L40 29 L40 33 Z" fill="currentColor"/>
+          <circle class="cat-signal" cx="52" cy="31" r="2.6"/>
+          <circle cx="52" cy="31" r=".8" fill="var(--cat-ink)"/>
+        </g>
+        <g class="closed-eyes cat-detail">
+          <path d="M35 31 Q38 34 41 31 M49 31 Q52 34 55 31"/>
+        </g>
+        <path class="cat-signal" d="M42 36 H46 L44 39 Z"/>
+        <path class="cat-detail" d="M44 39 L41 41 M44 39 L47 41"/>
+        <path class="cat-detail" d="M34 36 L24 34 M34 39 H23 M54 36 L64 34 M54 39 H65" opacity=".62"/>
       </g>
     </svg>
 
-    <!-- cling poses (bottom / top / left / right): single svg, rotated per side -->
+    <!-- One canonical edge pose rotates to all four sides, preserving drag geometry. -->
     <svg v-else
          :viewBox="(companionPose === 'bottom' || companionPose === 'top') ? '0 0 88 50' : '0 0 50 88'"
-         stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+         fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <g :transform="poseRotation">
         <g class="body">
-          <!-- two paws hooked over the edge -->
-          <path d="M 22 50 L 22 36 Q 22 32 26 32 Q 30 32 30 38 L 30 44" stroke-width="1.6"/>
-          <path d="M 66 50 L 66 36 Q 66 32 62 32 Q 58 32 58 38 L 58 44" stroke-width="1.6"/>
-          <!-- head, peeking up between the paws -->
-          <circle cx="44" cy="22" r="14" stroke-width="1.6"/>
-          <path class="ear" d="M 33 13 L 30 3 L 39 8 Z" stroke-width="1.6"/>
-          <path class="ear" d="M 55 13 L 58 3 L 49 8 Z" stroke-width="1.6"/>
-          <path d="M 34 10 L 33 5 L 37 8" stroke-width="0.8" opacity="0.45"/>
-          <path d="M 54 10 L 55 5 L 51 8" stroke-width="0.8" opacity="0.45"/>
-          <ellipse class="eye" cx="38" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-          <ellipse class="eye" cx="50" cy="20" rx="1.3" ry="2" fill="currentColor" stroke="none"/>
-          <path class="eye-closed" d="M 36 20 Q 38 22 40 20" stroke-width="1" fill="none"/>
-          <path class="eye-closed" d="M 48 20 Q 50 22 52 20" stroke-width="1" fill="none"/>
-          <path d="M 43 26 L 45 26 L 44 27.4 Z" fill="currentColor" stroke="none"/>
-          <path d="M 44 27.4 Q 41.5 28.6 40.8 27.6 M 44 27.4 Q 46.5 28.6 47.2 27.6" stroke-width="0.8"/>
-          <line x1="34" y1="24.5" x2="26" y2="22.5" stroke-width="0.5"/>
-          <line x1="34" y1="26"   x2="26" y2="26"   stroke-width="0.5"/>
-          <line x1="54" y1="24.5" x2="62" y2="22.5" stroke-width="0.5"/>
-          <line x1="54" y1="26"   x2="62" y2="26"   stroke-width="0.5"/>
+          <path class="cat-shell" d="M20 50 V37 Q20 31 26 31 Q32 31 32 38 V44 H56 V38 Q56 31 62 31 Q68 31 68 37 V50"/>
+          <path class="cat-detail" d="M23 38 H29 M59 38 H65" opacity=".55"/>
+          <path class="cat-shell" d="M27 25 L29 5 L38 11 Q44 8 50 11 L59 5 L61 25 Q60 38 44 40 Q28 38 27 25 Z"/>
+          <path class="cat-detail" d="M30 9 L36 13 M58 9 L52 13" opacity=".52"/>
+          <path class="phase-beacon cat-signal" d="M44 10 L48 14 L44 18 L40 14 Z"/>
+          <g class="open-eyes">
+            <path d="M35 23 L40 21 L40 25 Z" fill="currentColor"/>
+            <circle class="cat-signal" cx="52" cy="23" r="2.6"/>
+            <circle cx="52" cy="23" r=".8" fill="var(--cat-ink)"/>
+          </g>
+          <g class="closed-eyes cat-detail">
+            <path d="M35 23 Q38 26 41 23 M49 23 Q52 26 55 23"/>
+          </g>
+          <path class="cat-signal" d="M42 28 H46 L44 31 Z"/>
+          <path class="cat-detail" d="M44 31 L41 33 M44 31 L47 33"/>
+          <path class="cat-detail" d="M34 28 L23 26 M54 28 L65 26" opacity=".62"/>
         </g>
       </g>
     </svg>
