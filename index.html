@@ -1030,13 +1030,26 @@ body {
 }
 
 .ring-readout strong {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
   color: var(--text);
-  font-size: clamp(20px, 2.6vw, 38px);
-  letter-spacing: -.05em;
+  font-size: clamp(18px, 2vw, 30px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
-.ring-readout span {
-  margin-top: 10px;
+.ring-readout strong small {
+  margin-left: .16em;
+  color: rgba(255, 255, 255, .68);
+  font-size: .48em;
+  font-weight: 700;
+}
+
+.ring-readout > span {
+  margin-top: 9px;
   color: var(--muted);
   font-size: 8px;
   font-weight: 700;
@@ -1427,7 +1440,7 @@ body {
       <div class="time-ring" :style="{ '--remaining': (progressFrac * 360) + 'deg' }">
         <div class="ring-scale"></div>
         <div class="ring-readout">
-          <strong>{{ Math.round(progressFrac * 100) }}%</strong>
+          <strong>{{ Math.round(progressFrac * 100) }}<small>%</small></strong>
           <span>{{ state.running ? 'counting' : 'held' }}</span>
         </div>
       </div>
